@@ -8,7 +8,7 @@
   </parent>
   <artifactId>sonarlint-issue-tracking</artifactId>
   <name>SonarLint Issue Tracking</name>
-  <description>Manage local issue tracking</description>
+  <description>Manage issue tracking</description>
 
   <properties>
     <!-- The library is shaded into sonarlint-core -->
@@ -25,6 +25,10 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-commons</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
     </dependency>
 
     <!-- unit tests -->

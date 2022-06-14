@@ -1,5 +1,5 @@
 /*
- * SonarLint Issue Tracking
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,29 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issuetracking;
+package org.sonarsource.sonarlint.core.issuetracking.server;
 
-import java.util.Collection;
-import org.sonarsource.sonarlint.core.issuetracking.tracked.TrackedIssueMatchable;
+public abstract class ServerIssueMatchable {
 
-public interface IssueTrackerCache {
+  private final String key;
+  private final String ruleKey;
+  private final String message;
 
-  boolean isFirstAnalysis(String file);
+  protected ServerIssueMatchable(String key, String ruleKey, String message) {
+    this.key = key;
+    this.ruleKey = ruleKey;
+    this.message = message;
+  }
 
-  Collection<TrackedIssueMatchable> getCurrentTrackables(String file);
+  public String getKey() {
+    return key;
+  }
 
-  Collection<TrackedIssueMatchable> getLiveOrFail(String file);
+  public String getRuleKey() {
+    return ruleKey;
+  }
 
-  void put(String file, Collection<TrackedIssueMatchable> trackables);
-
-  /**
-   * Empty the cache, delete everything.
-   */
-  void clear();
-
-  /**
-   * Shutdown the cache. This is the time for persistent implementations to flush everything to storage.
-   */
-  void shutdown();
+  public String getMessage() {
+    return message;
+  }
 
 }

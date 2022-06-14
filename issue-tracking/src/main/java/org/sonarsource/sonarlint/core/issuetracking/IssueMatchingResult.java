@@ -24,28 +24,27 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 /**
- * Store the state of tracking of issues.
+ * Store the result of matching of issues.
  *
- * @param <R> type of the "raw" trackables that are in the incoming collection
- * @param <B> type of the base trackables that are in the current collection
+ * @param <L> type of the "left" issues
+ * @param <R> type of the "right" issues
  */
-public class Tracking<R extends Trackable, B extends Trackable> {
+public class IssueMatchingResult<L, R> {
 
   /**
-   * Matched issues -> a raw issue is associated to a base issue
+   * Matched issues -> a left issue is associated to a right issue
    */
-  private final IdentityHashMap<R, B> rawToBase = new IdentityHashMap<>();
-  private final IdentityHashMap<B, R> baseToRaw = new IdentityHashMap<>();
+  private final IdentityHashMap<L, R> leftToRight = new IdentityHashMap<>();
+  private final IdentityHashMap<R, L> rightToLeft = new IdentityHashMap<>();
 
-  private final Collection<R> raws;
-  private final Collection<B> bases;
+  private final Collection<L> lefts;
+  private final Collection<R> rights;
 
-  public Tracking(Supplier<Collection<R>> rawTrackableSupplier, Supplier<Collection<B>> baseTrackableSupplier) {
-    this.raws = rawTrackableSupplier.get();
-    this.bases = baseTrackableSupplier.get();
+  public IssueMatchingResult(Collection<L> lefts, Collection<R> rights) {
+    this.lefts = lefts;
+    this.rights = rights;
   }
 
   /**
@@ -53,40 +52,40 @@ public class Tracking<R extends Trackable, B extends Trackable> {
    * that the traversal does not fail if method {@link #match(Trackable, Trackable)}
    * is called.
    */
-  public Iterable<R> getUnmatchedRaws() {
-    List<R> result = new ArrayList<>();
-    for (R r : raws) {
-      if (!rawToBase.containsKey(r)) {
+  public Iterable<L> getUnmatchedLefts() {
+    List<L> result = new ArrayList<>();
+    for (L r : lefts) {
+      if (!leftToRight.containsKey(r)) {
         result.add(r);
       }
     }
     return result;
   }
 
-  public Map<R, B> getMatchedRaws() {
-    return rawToBase;
+  public Map<L, R> getMatchedLefts() {
+    return leftToRight;
   }
 
   /**
-   * The base issues that are not matched by a raw issue and that need to be closed.
+   * The right issues that are not matched by a left issue.
    */
-  public Iterable<B> getUnmatchedBases() {
-    List<B> result = new ArrayList<>();
-    for (B b : bases) {
-      if (!baseToRaw.containsKey(b)) {
+  public Iterable<R> getUnmatchedRights() {
+    List<R> result = new ArrayList<>();
+    for (R b : rights) {
+      if (!rightToLeft.containsKey(b)) {
         result.add(b);
       }
     }
     return result;
   }
 
-  void match(R raw, B base) {
-    rawToBase.put(raw, base);
-    baseToRaw.put(base, raw);
+  void match(L left, R right) {
+    leftToRight.put(left, right);
+    rightToLeft.put(right, left);
   }
 
   boolean isComplete() {
-    return rawToBase.size() == raws.size();
+    return leftToRight.size() == lefts.size();
   }
 
 }

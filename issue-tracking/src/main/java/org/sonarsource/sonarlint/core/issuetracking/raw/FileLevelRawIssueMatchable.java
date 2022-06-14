@@ -17,29 +17,12 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issuetracking;
+package org.sonarsource.sonarlint.core.issuetracking.raw;
 
-import java.util.Collection;
-import org.sonarsource.sonarlint.core.issuetracking.tracked.TrackedIssueMatchable;
+public class FileLevelRawIssueMatchable extends RawIssueMatchable {
 
-public interface IssueTrackerCache {
-
-  boolean isFirstAnalysis(String file);
-
-  Collection<TrackedIssueMatchable> getCurrentTrackables(String file);
-
-  Collection<TrackedIssueMatchable> getLiveOrFail(String file);
-
-  void put(String file, Collection<TrackedIssueMatchable> trackables);
-
-  /**
-   * Empty the cache, delete everything.
-   */
-  void clear();
-
-  /**
-   * Shutdown the cache. This is the time for persistent implementations to flush everything to storage.
-   */
-  void shutdown();
+  protected FileLevelRawIssueMatchable(String ruleKey, String message) {
+    super(ruleKey, message);
+  }
 
 }

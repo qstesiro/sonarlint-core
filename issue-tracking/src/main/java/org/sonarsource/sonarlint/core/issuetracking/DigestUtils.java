@@ -1,5 +1,5 @@
 /*
- * SonarLint Issue Tracking
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -19,27 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.issuetracking;
 
-import java.util.Collection;
-import org.sonarsource.sonarlint.core.issuetracking.tracked.TrackedIssueMatchable;
+public class DigestUtils {
 
-public interface IssueTrackerCache {
+  private DigestUtils() {
+    // utility class, forbidden constructor
+  }
 
-  boolean isFirstAnalysis(String file);
-
-  Collection<TrackedIssueMatchable> getCurrentTrackables(String file);
-
-  Collection<TrackedIssueMatchable> getLiveOrFail(String file);
-
-  void put(String file, Collection<TrackedIssueMatchable> trackables);
-
-  /**
-   * Empty the cache, delete everything.
-   */
-  void clear();
-
-  /**
-   * Shutdown the cache. This is the time for persistent implementations to flush everything to storage.
-   */
-  void shutdown();
+  public static String digest(String content) {
+    return org.apache.commons.codec.digest.DigestUtils.md5Hex(content.replaceAll("[\\s]", ""));
+  }
 
 }

@@ -19,10 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.issuetracking;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-public class CachingIssueTracker extends IssueTracker {
+public class CachingIssueTracker {
 
   private final IssueTrackerCache cache;
 
@@ -37,7 +38,7 @@ public class CachingIssueTracker extends IssueTracker {
    * @param file the file analyzed
    * @param trackables the trackables in the file
    */
-  public synchronized Collection<Trackable> matchAndTrackAsNew(String file, Collection<Trackable> trackables) {
+  public synchronized Collection<Trackable> matchAndTrackRaws(String file, Collection<Trackable> trackables) {
     Collection<Trackable> tracked;
     if (cache.isFirstAnalysis(file)) {
       tracked = trackables;
@@ -65,6 +66,32 @@ public class CachingIssueTracker extends IssueTracker {
     var tracked = apply(trackables, current, true);
     cache.put(file, tracked);
     return tracked;
+  }
+
+  /**
+   * Local issue tracking: baseIssues are existing issue, nextIssues are raw issues coming from the analysis.
+   * Server issue tracking: baseIssues are server issues, nextIssues are the existing issue, coming from local issue tracking.
+   */
+  private static Collection<Trackable> apply(Collection<Trackable> baseIssues, Collection<Trackable> nextIssues, boolean inheritSeverity) {
+    Collection<Trackable> trackedIssues = new ArrayList<>();
+    var tracking = new Tracker<>().track(() -> nextIssues, () -> baseIssues);
+
+    tracking.getMatchedLefts().entrySet().stream()
+      .map(e -> new CombinedTrackable(e.getValue(), e.getKey(), inheritSeverity))
+      .forEach(trackedIssues::add);
+
+    for (Trackable next : tracking.getUnmatchedLefts()) {
+      if (next.getServerIssueKey() != null) {
+        // not matched with server anymore
+        next = new DisconnectedTrackable(next);
+      } else if (next.getCreationDate() == null) {
+        // first time we see this issue locally
+        next = new LeakedTrackable(next);
+      }
+      trackedIssues.add(next);
+    }
+
+    return trackedIssues;
   }
 
   public void clear() {

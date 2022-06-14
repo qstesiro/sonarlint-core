@@ -36,8 +36,8 @@ import java.util.function.Supplier;
  */
 public class Tracker<R extends Trackable, B extends Trackable> {
 
-  public Tracking<R, B> track(Supplier<Collection<R>> rawTrackableSupplier, Supplier<Collection<B>> baseTrackableSupplier) {
-    var tracking = new Tracking<R, B>(rawTrackableSupplier, baseTrackableSupplier);
+  public IssueMatchingResult<R, B> track(Supplier<Collection<R>> rawTrackableSupplier, Supplier<Collection<B>> baseTrackableSupplier) {
+    var tracking = new IssueMatchingResult<>(rawTrackableSupplier, baseTrackableSupplier);
 
     // 1. match issues with same server issue key
     match(tracking, ServerIssueSearchKeyFactory.INSTANCE);
@@ -64,13 +64,13 @@ public class Tracker<R extends Trackable, B extends Trackable> {
     return tracking;
   }
 
-  private void match(Tracking<R, B> tracking, SearchKeyFactory factory) {
+  private void match(IssueMatchingResult<R, B> tracking, SearchKeyFactory factory) {
     if (tracking.isComplete()) {
       return;
     }
 
     Map<SearchKey, List<B>> baseSearch = new HashMap<>();
-    for (B base : tracking.getUnmatchedBases()) {
+    for (B base : tracking.getUnmatchedRights()) {
       var searchKey = factory.apply(base);
       if (!baseSearch.containsKey(searchKey)) {
         baseSearch.put(searchKey, new ArrayList<>());
@@ -78,7 +78,7 @@ public class Tracker<R extends Trackable, B extends Trackable> {
       baseSearch.get(searchKey).add(base);
     }
 
-    for (R raw : tracking.getUnmatchedRaws()) {
+    for (R raw : tracking.getUnmatchedLefts()) {
       var rawKey = factory.apply(raw);
       Collection<B> bases = baseSearch.get(rawKey);
       if (bases != null && !bases.isEmpty()) {

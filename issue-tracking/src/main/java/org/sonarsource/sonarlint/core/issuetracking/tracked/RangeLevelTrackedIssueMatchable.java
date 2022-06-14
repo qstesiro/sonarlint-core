@@ -17,29 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issuetracking;
+package org.sonarsource.sonarlint.core.issuetracking.tracked;
 
-import java.util.Collection;
-import org.sonarsource.sonarlint.core.issuetracking.tracked.TrackedIssueMatchable;
+import javax.annotation.Nullable;
 
-public interface IssueTrackerCache {
+public class RangeLevelTrackedIssueMatchable extends TrackedIssueMatchable {
+  private final String lineHash;
+  private final int startLine;
+  private final String rangeHash;
 
-  boolean isFirstAnalysis(String file);
+  protected RangeLevelTrackedIssueMatchable(String ruleKey, String message, @Nullable String serverIssueKey, int startLine, String lineHash, String rangeHash) {
+    super(ruleKey, message, serverIssueKey);
+    this.startLine = startLine;
+    this.lineHash = lineHash;
+    this.rangeHash = rangeHash;
+  }
 
-  Collection<TrackedIssueMatchable> getCurrentTrackables(String file);
+  public int getStartLine() {
+    return startLine;
+  }
 
-  Collection<TrackedIssueMatchable> getLiveOrFail(String file);
+  public String getLineHash() {
+    return lineHash;
+  }
 
-  void put(String file, Collection<TrackedIssueMatchable> trackables);
-
-  /**
-   * Empty the cache, delete everything.
-   */
-  void clear();
-
-  /**
-   * Shutdown the cache. This is the time for persistent implementations to flush everything to storage.
-   */
-  void shutdown();
+  public String getRangeHash() {
+    return rangeHash;
+  }
 
 }

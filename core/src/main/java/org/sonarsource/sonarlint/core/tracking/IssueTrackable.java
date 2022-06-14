@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.analysis.api.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
-import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
+import static org.sonarsource.sonarlint.core.issuetracking.DigestUtils.digest;
 
 public class IssueTrackable implements Trackable<Issue> {
 

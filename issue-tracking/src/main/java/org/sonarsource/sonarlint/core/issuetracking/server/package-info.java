@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Issue Tracking
  * Copyright (C) 2016-2022 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,5 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
-
-public class DigestUtils {
-
-  private DigestUtils() {
-    // utility class, forbidden constructor
-  }
-
-  public static String digest(String content) {
-    return org.apache.commons.codec.digest.DigestUtils.md5Hex(content.replaceAll("[\\s]", ""));
-  }
-
-}
+@javax.annotation.ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.issuetracking.server;
