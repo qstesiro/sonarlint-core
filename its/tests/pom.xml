@@ -11,6 +11,7 @@
 
   <properties>
     <junit.version>4.13.1</junit.version>
+    <version.dbd>1.7-SNAPSHOT</version.dbd>
   </properties>
 
 
@@ -80,6 +81,30 @@
                   <groupId>com.sonarsource.cpp</groupId>
                   <artifactId>sonar-cfamily-plugin</artifactId>
                   <version>6.32.0.44918</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.dbd</groupId>
+                  <artifactId>sonar-dbd-plugin</artifactId>
+                  <version>${version.dbd}</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.dbd</groupId>
+                  <artifactId>sonar-dbd-java-frontend-plugin</artifactId>
+                  <version>${version.dbd}</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.sonarsource.dbd</groupId>
+                  <artifactId>sonar-dbd-python-frontend-plugin</artifactId>
+                  <version>${version.dbd}</version>
+                  <type>jar</type>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.python</groupId>
+                  <artifactId>sonar-python-plugin</artifactId>
+                  <version>3.17.0.10029</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>

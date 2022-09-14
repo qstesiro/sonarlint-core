@@ -19,6 +19,7 @@
  */
 package its;
 
+import its.tools.PluginLocator;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -66,10 +67,17 @@ public class StandaloneTest {
     globalProps.put("sonar.global.label", "It works");
     var config = StandaloneGlobalConfiguration.builder()
       .addPlugin(Paths.get("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
+      .addPlugin(PluginLocator.getDbdEnginePluginPath())
+      .addPlugin(PluginLocator.getDbdPythonFrontendPluginPath())
+//      .addPlugin(PluginLocator.getDbdJavaFrontendEnginePluginPath())
+      .addPlugin(PluginLocator.getPythonPluginPath())
       // The global-extension-plugin reuses the cobol plugin key to be whitelisted
-      .addEnabledLanguage(Language.COBOL)
+      .addEnabledLanguages(Language.COBOL, Language.PYTHON)
       .setSonarLintUserHome(sonarlintUserHome)
-      .setLogOutput((msg, level) -> logs.add(msg))
+      .setLogOutput((msg, level) -> {
+        logs.add(msg);
+        System.out.println(msg);
+      })
       .setExtraProperties(globalProps).build();
     sonarlint = new StandaloneSonarLintEngineImpl(config);
 
@@ -164,6 +172,30 @@ public class StandaloneTest {
       "Param enumListParam has value list1,list2",
       "Param multipleIntegersParam has value 80,160");
   }
+
+  private static final String DBD_TEST = "" +
+    "def funccc():\n" +
+    "  my_dict = {'a': 1, 'b': 2, 'c': 3}\n" +
+    "  for key in my_dict:\n" +
+    "    print(key)\n" +
+    "    if key == 'b':\n" +
+    "      my_dict.pop(key)";
+
+  @Test
+  public void canAnalyzePythonDbd() throws Exception {
+    var inputFile = prepareInputFile("foo.py", DBD_TEST, false);
+
+    final List<Issue> issues = new ArrayList<>();
+    sonarlint.analyze(
+      StandaloneAnalysisConfiguration.builder()
+        .setBaseDir(baseDir.toPath())
+        .addInputFile(inputFile)
+        .build(),
+      issues::add, null, null);
+    assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
+      tuple("global:inc", inputFile.getPath(), "Issue number 0"));
+  }
+
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding) throws IOException {
     final var file = new File(baseDir, relativePath);

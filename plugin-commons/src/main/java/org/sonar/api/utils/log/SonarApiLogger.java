@@ -35,18 +35,22 @@ public class SonarApiLogger extends BaseLogger {
 
   @Override
   public void doTrace(String msg) {
+    System.out.println(msg);
   }
 
   @Override
   public void doTrace(String pattern, Object arg) {
+    System.out.println(pattern);
   }
 
   @Override
   public void doTrace(String msg, Object arg1, Object arg2) {
+    System.out.println(msg);
   }
 
   @Override
   public void doTrace(String msg, Object... args) {
+    System.out.println(msg);
   }
 
   @Override

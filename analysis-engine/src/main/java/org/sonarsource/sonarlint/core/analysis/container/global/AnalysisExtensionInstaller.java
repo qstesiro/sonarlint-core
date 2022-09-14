@@ -79,7 +79,7 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
       LOG.debug("TypeScript sensor excluded");
       return false;
     }
-    return Language.containsPlugin(pluginKey) || isNotSensor(extension);
+    return Language.containsPlugin(pluginKey) || "dbd".equals(pluginKey) || "dbdpythonfrontend".equals(pluginKey) || isNotSensor(extension);
   }
 
   private static boolean isNotSensor(Object extension) {
