@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
       - master
+      - feature/jh/try_agent_pool
   paths:
     exclude:
       - docs/**/*
@@ -17,8 +18,7 @@ schedules:
     - master
   always: true
 
-pool:
-  vmImage: 'ubuntu-latest'
+pool: 'SonarLint Pool'
 
 variables:
   - group: sonarsource-build-variables
