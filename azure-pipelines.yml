@@ -29,7 +29,7 @@ resources:
     - repository: commonTemplates
       type: git
       name: pipelines-yaml-templates
-      ref:  refs/tags/v2.0.0
+      ref:  refs/heads/feature/jh/fix_for_agent_pool
 
 
 stages:
