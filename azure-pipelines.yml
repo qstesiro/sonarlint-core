@@ -158,8 +158,7 @@ stages:
           mavenOptions: $(MAVEN_OPTS)
     - job: test_linux
       displayName: 'Run unit tests on Linux'
-      pool:
-        vmImage: 'ubuntu-latest'
+      pool: 'SonarLint Pool'
       variables:
         MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
         MAVEN_OPTS: '-Xmx3072m -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
