@@ -63,7 +63,11 @@ public enum Language {
   CLOUDFORMATION("cloudformation", "iac", "CloudFormation", new String[0], "sonar.cloudformation.file.suffixes"),
   DOCKER("docker", "iac", "Docker", new String[0], "sonar.docker.file.suffixes"),
   KUBERNETES("kubernetes", "iac", "Kubernetes", new String[0], "sonar.kubernetes.file.suffixes"),
-  TERRAFORM("terraform", "iac", "Terraform", new String[] {".tf"}, "sonar.terraform.file.suffixes");
+  TERRAFORM("terraform", "iac", "Terraform", new String[] {".tf"}, "sonar.terraform.file.suffixes"),
+
+  // Information from: https://github.com/SonarSource/sonar-vb/blob/2.10.0.3598/sonar-vb-plugin/src/main/java/com/sonar/vb/plugin/VbPlugin.java
+  VB6("vb", "vb", "Vb", new String[] { ".bas", ".frm", ".cls", ".ctl", ".BAS", ".FRM", ".CLS", ".CTL" }, "sonar.vb.file.suffixes");
+
   private String languageKey;
   private String pluginKey;
   private String[] defaultFileSuffixes;
