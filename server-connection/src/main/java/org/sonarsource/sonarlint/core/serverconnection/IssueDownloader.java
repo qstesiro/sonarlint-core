@@ -46,6 +46,10 @@ public class IssueDownloader {
 
   private final Set<Language> enabledLanguages;
 
+  public Set<Language> getEnabledLanguages() {
+    return enabledLanguages;
+  }
+
   public IssueDownloader(Set<Language> enabledLanguages) {
     this.enabledLanguages = enabledLanguages;
   }
@@ -82,10 +86,14 @@ public class IssueDownloader {
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
-  public PullResult downloadFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync) {
+  public PullResult downloadFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync, Optional<Integer> lastLangCount) {
     var issueApi = serverApi.issue();
+    Integer langCount = null;
+    if(lastLangCount.isPresent()){
+      langCount = lastLangCount.get();
+    }
 
-    var apiResult = issueApi.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null));
+    var apiResult = issueApi.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null), langCount);
     // Ignore project level issues
     var changedIssues = apiResult.getIssues()
       .stream()

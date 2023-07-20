@@ -321,6 +321,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     private static final String PROJECT_KEY_LANGUAGE_MIX = "sample-language-mix";
 
     private ConnectedSonarLintEngine engineWithJavaOnly;
+    private ConnectedSonarLintEngine engineWithPythonJava;
 
     @BeforeEach
     void prepare(@TempDir Path sonarUserHome) throws IOException {
@@ -345,6 +346,14 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .addEnabledLanguage(Language.JAVA)
         .build());
 
+      engineWithPythonJava = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.sonarQubeBuilder()
+        .setConnectionId("orchestrator")
+        .setSonarLintUserHome(sonarUserHome)
+        .setExtraProperties(new HashMap<>())
+        // authorize only Java to check that Python is left aside during sync
+        .addEnabledLanguage(Language.PYTHON)
+        .addEnabledLanguage(Language.JAVA)
+        .build());
     }
 
     @AfterEach
@@ -361,8 +370,27 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       var javaIssues = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
       var pythonIssues = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/main.py");
 
+      //create a engine without java enabled
+      //pull see nothing pulled
+      //run the engine with java only
+      //pull again and see nothing pulled (if the bug is real)
       assertThat(javaIssues).hasSize(2);
       assertThat(pythonIssues).isEmpty();
+    }
+
+    @Test
+    // SonarQube should support pulling issues
+    @OnlyOnSonarQube(from = "9.6")
+    void sync_all_issues_of_enabled_languages2() {
+      engineWithPythonJava.syncServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME, null);
+
+      var javaIssuesWithPython = engineWithPythonJava.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
+      var pythonIssuesPython = engineWithPythonJava.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/main.py");
+
+      engineWithJavaOnly.syncServerIssues(endpointParams(ORCHESTRATOR), backend.getHttpClient(CONNECTION_ID), PROJECT_KEY_LANGUAGE_MIX, MAIN_BRANCH_NAME, null);
+      var javaIssuesWithJava = engineWithJavaOnly.getServerIssues(new ProjectBinding(PROJECT_KEY_LANGUAGE_MIX, "", ""), MAIN_BRANCH_NAME, "src/main/java/foo/Foo.java");
+
+      assertThat(javaIssuesWithJava).isNotEmpty();
     }
   }
 

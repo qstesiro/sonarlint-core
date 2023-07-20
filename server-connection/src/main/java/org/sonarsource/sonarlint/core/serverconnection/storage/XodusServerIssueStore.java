@@ -51,6 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -111,6 +112,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private static final String PATH_PROPERTY_NAME = "path";
   private static final String NAME_PROPERTY_NAME = "name";
   private static final String LAST_ISSUE_SYNC_PROPERTY_NAME = "lastIssueSync";
+  private static final String PREVIOUSLY_ENABLED_LANGUAGES = "previouslyEnabledLanguages";
   private static final String LAST_TAINT_SYNC_PROPERTY_NAME = "lastTaintSync";
   private static final String LAST_HOTSPOT_SYNC_PROPERTY_NAME = "lastHotspotSync";
   private static final String VERSION_PROPERTY_NAME = "version";
@@ -316,7 +318,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), "issues"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -327,6 +329,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       });
       closedIssueKeysToDelete.forEach(issueKey -> remove(issueKey, txn));
       branch.setProperty(LAST_ISSUE_SYNC_PROPERTY_NAME, syncTimestamp);
+      branch.setProperty(PREVIOUSLY_ENABLED_LANGUAGES, enabledLanguages.size());
     }));
   }
 
@@ -372,6 +375,12 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> (Instant) branch.getProperty(LAST_ISSUE_SYNC_PROPERTY_NAME)));
+  }
+
+  @Override
+  public Optional<Integer> getLastLanguageCount(String branchName) {
+    return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
+      .map(branch -> (Integer) branch.getProperty(PREVIOUSLY_ENABLED_LANGUAGES)));
   }
 
   @Override

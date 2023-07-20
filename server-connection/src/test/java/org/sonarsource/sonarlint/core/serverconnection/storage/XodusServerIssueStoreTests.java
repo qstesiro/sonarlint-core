@@ -240,7 +240,7 @@ class XodusServerIssueStoreTests {
       aServerIssue().setKey("key2"),
       aServerIssue().setKey("key3")));
 
-    store.mergeIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now());
+    store.mergeIssues("branch", List.of(), Set.of("key1", "key3"), Instant.now(), null);
 
     assertThat(store.load("branch", "file/path"))
       .extracting(ServerIssue::getKey)
@@ -252,7 +252,7 @@ class XodusServerIssueStoreTests {
     store.mergeIssues("branch", List.of(
       aServerIssue().setKey("key1"),
       aServerIssue().setKey("key2"),
-      aServerIssue().setKey("key3")), Set.of(), Instant.now());
+      aServerIssue().setKey("key3")), Set.of(), Instant.now(), null);
 
     assertThat(store.load("branch", "file/path"))
       .extracting(ServerIssue::getKey)
@@ -268,7 +268,7 @@ class XodusServerIssueStoreTests {
     store.mergeIssues("branch", List.of(
       aServerIssue().setType(RuleType.CODE_SMELL).setKey("key1"),
       aServerIssue().setType(RuleType.BUG).setKey("key2"),
-      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now());
+      aServerIssue().setType(RuleType.VULNERABILITY).setKey("key3")), Set.of(), Instant.now(), null);
 
     assertThat(store.load("branch", "file/path"))
       .extracting(ServerIssue::getKey, ServerIssue::getType)
@@ -504,7 +504,7 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_get_last_issue_sync_timestamp() {
-    store.mergeIssues("branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789));
+    store.mergeIssues("branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789), null);
 
     assertThat(store.getLastIssueSyncTimestamp("branch")).contains(Instant.ofEpochMilli(123456789));
   }

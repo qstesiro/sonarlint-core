@@ -159,9 +159,13 @@ public class IssueApi {
     return url.toString();
   }
 
-  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince, @Nullable Integer lastLastCount) {
+    if(lastLastCount != null && lastLastCount != enabledLanguages.size()){
+      changedSince = null;
+    }
+    Long finalChangedSince = changedSince;
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.get(getPullIssuesUrl(projectKey, branchName, enabledLanguages, changedSince)),
+      () -> serverApiHelper.get(getPullIssuesUrl(projectKey, branchName, enabledLanguages, finalChangedSince)),
       response -> {
         var input = response.bodyAsStream();
         var timestamp = Issues.IssuesPullQueryTimestamp.parseDelimitedFrom(input);

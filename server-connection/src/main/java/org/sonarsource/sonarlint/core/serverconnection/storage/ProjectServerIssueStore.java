@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -57,7 +58,7 @@ public interface ProjectServerIssueStore {
    *  - existing issues are updated
    *  - closed issues are removed from the store
    */
-  void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp);
+  void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages);
 
   /**
    * Merge provided taint issues to stored ones for the given project:
@@ -80,6 +81,12 @@ public interface ProjectServerIssueStore {
    * @return empty if the issues of the branch have never been pulled
    */
   Optional<Instant> getLastIssueSyncTimestamp(String branchName);
+
+  /**
+   * Return the timestamp of the last issue sync for a given branch.
+   * @return empty if the issues of the branch have never been pulled
+   */
+  Optional<Integer> getLastLanguageCount(String branchName);
 
   /**
    * Return the timestamp of the last taint issue sync for a given branch.

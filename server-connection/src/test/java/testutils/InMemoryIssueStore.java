@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -59,7 +60,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp) {
+  public void mergeIssues(String branchName, List<ServerIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
     issuesByFileByBranch
@@ -97,6 +98,11 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   @Override
   public Optional<Instant> getLastIssueSyncTimestamp(String branchName) {
     return ofNullable(lastIssueSyncByBranch.get(branchName));
+  }
+
+  @Override
+  public Optional<Integer> getLastLanguageCount(String branchName) {
+    return Optional.empty();
   }
 
   @Override

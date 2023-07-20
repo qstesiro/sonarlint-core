@@ -95,11 +95,11 @@ class ServerIssueUpdaterTest {
     var queryTimestamp = Instant.now();
     var lastSync = Optional.<Instant>empty();
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
-    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync,Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
-    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp));
+    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), null);
   }
 
   @Test
@@ -109,11 +109,11 @@ class ServerIssueUpdaterTest {
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
-    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
-    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp));
+    verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), null);
   }
 
   @Test

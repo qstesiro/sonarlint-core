@@ -157,7 +157,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), Optional.empty());
     assertThat(result.getChangedIssues()).hasSize(1);
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
@@ -191,7 +191,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), Optional.empty());
     assertThat(result.getChangedIssues()).hasSize(1);
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
@@ -212,7 +212,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), Optional.empty());
     assertThat(result.getChangedIssues()).hasSize(1);
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
@@ -236,7 +236,7 @@ class IssueDownloaderTests {
       .build();
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java&changedSince=123456789", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.of(Instant.ofEpochMilli(123456789)));
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.of(Instant.ofEpochMilli(123456789)), Optional.empty());
 
     assertThat(result.getChangedIssues()).isEmpty();
     assertThat(result.getClosedIssueKeys()).containsOnly("key");
@@ -273,7 +273,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var issues = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var issues = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(),Optional.empty());
     assertThat(issues.getChangedIssues()).isEmpty();
     assertThat(issues.getClosedIssueKeys()).isEmpty();
   }

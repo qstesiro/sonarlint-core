@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -54,8 +55,9 @@ public class ServerIssueUpdater {
 
   public void sync(ServerApi serverApi, String projectKey, String branchName) {
     var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
-    var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync);
-    storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp());
+    var lastLangCount = storage.project(projectKey).findings().getLastLanguageCount(branchName);
+    var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync, Optional.empty());
+    storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp(), issueDownloader.getEnabledLanguages());
   }
 
   public void syncTaints(ServerApi serverApi, String projectKey, String branchName) {
