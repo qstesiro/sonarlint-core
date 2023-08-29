@@ -66,11 +66,13 @@ public class WebSocketService {
     this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageSmartNotifications();
     this.eventRouter = new EventDispatcher()
       .dispatch(QualityGateChangedEvent.class, new ShowSmartNotificationOnQualityGateChangedEvent(client, configurationRepository, telemetryService));
+    System.out.println("Creating service " + this);
   }
 
   protected void reopenConnectionOnClose() {
     var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
     if (this.sonarCloudWebSocket != null && connectionId != null) {
+      System.out.println("Reopening connection for " + this);
       // If connection already exists, close it and create new one before it expires on its own
       reopenConnection(connectionId);
     }
@@ -287,8 +289,10 @@ public class WebSocketService {
 
   @PreDestroy
   public void shutdown() {
+    System.out.println("Shutting down " + this);
     closeSocket();
     connectionIdsInterestedInNotifications.clear();
     subscribedProjectKeysByConfigScopes.clear();
+    System.out.println("Finished shut down " + this);
   }
 }
