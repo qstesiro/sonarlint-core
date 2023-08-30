@@ -27,12 +27,15 @@ import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.ConfigurationService;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
+import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -40,6 +43,8 @@ import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+import org.sonarsource.sonarlint.core.serverconnection.StorageService;
+import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
 
 @Named
 @Singleton
@@ -47,12 +52,16 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
+  private final SonarLintClient client;
   private final EventBus clientEventBus;
   private final ConfigurationRepository repository;
+  private final StorageService storage;
 
-  public ConfigurationServiceImpl(EventBus clientEventBus, ConfigurationRepository repository) {
+  public ConfigurationServiceImpl(SonarLintClient client, EventBus clientEventBus, ConfigurationRepository repository, StorageService storage) {
+    this.client = client;
     this.clientEventBus = clientEventBus;
     this.repository = repository;
+    this.storage = storage;
   }
 
   @Override
@@ -102,6 +111,17 @@ public class ConfigurationServiceImpl implements ConfigurationService {
   public void didUpdateBinding(DidUpdateBindingParams params) {
     var boundEvent = bind(params.getConfigScopeId(), params.getUpdatedBinding());
     if (boundEvent != null) {
+      // TODO: Only for SQ
+      var supportedGracefully = storage.connection(params.getUpdatedBinding().getConnectionId()).serverInfo().read()
+        .map(info -> VersionUtils.isVersionSupportedDuringGracePeriod(info.getVersion())).orElse(false);
+      if (Boolean.TRUE.equals(supportedGracefully)) {
+        // TODO: Show balloon in SLI is not working during the Wizard
+        client.showMessage(new ShowMessageParams(MessageType.WARNING,
+          String.format("The version you are currently connected to is not the latest LTS %s and will soon be unsupported." +
+              " Please consider upgrading to ensure continued support and access to the latest functionalities.",
+            VersionUtils.getCurrentLts()))
+        );
+      }
       clientEventBus.post(boundEvent);
     }
   }
