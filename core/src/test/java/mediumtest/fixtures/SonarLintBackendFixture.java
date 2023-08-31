@@ -111,6 +111,7 @@ public class SonarLintBackendFixture {
     private boolean areSecurityHotspotsEnabled;
     private boolean synchronizeProjects;
     private boolean taintVulnerabilitiesEnabled = true;
+    private boolean manageServerSentEvents;
     private String userAgent = "SonarLintBackendFixture";
     private String clientName = "SonarLint Backend Fixture";
 
@@ -264,6 +265,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withServerSentEventsEnabled() {
+      this.manageServerSentEvents = true;
+      return this;
+    }
+
     public SonarLintBackendBuilder withStandaloneRuleConfig(String ruleKey, boolean isActive, Map<String, String> params) {
       this.standaloneConfigByKey.put(ruleKey, new StandaloneRuleConfigDto(isActive, params));
       return this;
@@ -311,7 +317,7 @@ public class SonarLintBackendFixture {
       var sonarLintBackend = new SonarLintTestBackend(client);
       client.setBackend(sonarLintBackend);
       var clientInfo = new ClientInfoDto(clientName, "mediumTests", userAgent);
-      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled);
+      var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled, manageServerSentEvents);
       try {
         sonarLintBackend
           .initialize(new InitializeParams(clientInfo, featureFlags,

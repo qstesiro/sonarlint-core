@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreating
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.event.DidReceiveServerEventParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeParams;
 import org.sonarsource.sonarlint.core.clientapi.client.fs.FindFileByNamesInScopeResponse;
 import org.sonarsource.sonarlint.core.clientapi.client.info.GetClientInfoResponse;
@@ -156,5 +157,13 @@ public interface SonarLintClient {
   @JsonRequest
   default CompletableFuture<CheckServerTrustedResponse> checkServerTrusted(CheckServerTrustedParams params) {
     return CompletableFuture.completedFuture(new CheckServerTrustedResponse(false));
+  }
+  /**
+   * @deprecated More precise notifications will eventually be sent to clients, like didUpdateTaintVulnerabilities to be used directly for display
+   */
+  @JsonNotification
+  @Deprecated(since = "9.1")
+  default void didReceiveServerEvent(DidReceiveServerEventParams params) {
+    // not implemented
   }
 }
