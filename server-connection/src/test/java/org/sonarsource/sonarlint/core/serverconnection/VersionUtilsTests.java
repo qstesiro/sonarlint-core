@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.Version;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.sonarsource.sonarlint.core.serverconnection.VersionUtils.CURRENT_LTS;
-import static org.sonarsource.sonarlint.core.serverconnection.VersionUtils.PREVIOUS_LTS;
+import static org.sonarsource.sonarlint.core.serverconnection.VersionUtils.getCurrentLts;
+import static org.sonarsource.sonarlint.core.serverconnection.VersionUtils.getPreviousLts;
 
 class VersionUtilsTests {
 
@@ -38,8 +38,8 @@ class VersionUtilsTests {
 
   @Test
   void grace_period_should_be_false_if_connected_current_lts() {
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(CURRENT_LTS)).isFalse();
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(CURRENT_LTS.getName() + ".1"))).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(getCurrentLts())).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(getCurrentLts().getName() + ".1"))).isFalse();
   }
 
   @Test
@@ -49,8 +49,8 @@ class VersionUtilsTests {
 
   @Test
   void grace_period_should_be_true_if_connected_during_grace_period() {
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(PREVIOUS_LTS)).isTrue();
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(PREVIOUS_LTS.getName() + ".1"))).isTrue();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(getPreviousLts())).isTrue();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(getPreviousLts().getName() + ".1"))).isTrue();
   }
 
 }
