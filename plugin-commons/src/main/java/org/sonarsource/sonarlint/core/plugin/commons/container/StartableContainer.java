@@ -20,5 +20,6 @@
 package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 public interface StartableContainer extends ExtensionContainer {
-  StartableContainer startComponents();
+
+    StartableContainer startComponents();
 }

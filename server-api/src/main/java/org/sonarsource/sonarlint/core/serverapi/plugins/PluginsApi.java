@@ -28,44 +28,53 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class PluginsApi {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ServerApiHelper helper;
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public PluginsApi(ServerApiHelper helper) {
-    this.helper = helper;
-  }
+    private final ServerApiHelper helper;
 
-  public List<ServerPlugin> getInstalled() {
-    return ServerApiHelper.processTimed(
-      () -> helper.get("/api/plugins/installed"),
-      response -> {
-        var plugins = new Gson().fromJson(response.bodyAsString(), InstalledPluginsPayload.class);
-        return Arrays.stream(plugins.plugins).map(PluginsApi::toInstalledPlugin).collect(Collectors.toList());
-      },
-      duration -> LOG.info("Downloaded plugin list in {}ms", duration));
-  }
+    public PluginsApi(ServerApiHelper helper) {
+        this.helper = helper;
+    }
 
-  private static ServerPlugin toInstalledPlugin(InstalledPluginPayload payload) {
-    return new ServerPlugin(payload.key, payload.hash, payload.filename, payload.sonarLintSupported);
-  }
+    public List<ServerPlugin> getInstalled() {
+        return ServerApiHelper.processTimed(
+            () -> helper.get("/api/plugins/installed"),
+            response -> {
+                var plugins = new Gson().fromJson(
+                    response.bodyAsString(),
+                    InstalledPluginsPayload.class
+                );
+                return Arrays
+                    .stream(plugins.plugins)
+                    .map(PluginsApi::toInstalledPlugin)
+                    .collect(Collectors.toList());
+            },
+            duration -> LOG.info("Downloaded plugin list in {}ms", duration)
+        );
+    }
 
-  public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer) {
-    var url = "api/plugins/download?plugin=" + key;
-    ServerApiHelper.consumeTimed(
-      () -> helper.get(url),
-      response -> pluginFileConsumer.accept(response.bodyAsStream()),
-      duration -> LOG.info("Downloaded '{}' in {}ms", key, duration));
-  }
+    private static ServerPlugin toInstalledPlugin(InstalledPluginPayload payload) {
+        return new ServerPlugin(payload.key, payload.hash, payload.filename, payload.sonarLintSupported);
+    }
 
-  private static class InstalledPluginsPayload {
-    InstalledPluginPayload[] plugins;
-  }
+    public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer) {
+        var url = "api/plugins/download?plugin=" + key;
+        ServerApiHelper.consumeTimed(
+            () -> helper.get(url),
+            response -> pluginFileConsumer.accept(response.bodyAsStream()),
+            duration -> LOG.info("Downloaded '{}' in {}ms", key, duration)
+        );
+    }
 
-  static class InstalledPluginPayload {
-    String key;
-    String hash;
-    String filename;
-    boolean sonarLintSupported;
-  }
+    private static class InstalledPluginsPayload {
+        InstalledPluginPayload[] plugins;
+    }
+
+    static class InstalledPluginPayload {
+        String key;
+        String hash;
+        String filename;
+        boolean sonarLintSupported;
+    }
 }

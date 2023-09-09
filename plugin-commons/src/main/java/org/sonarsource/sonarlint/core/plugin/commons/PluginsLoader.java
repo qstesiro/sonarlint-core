@@ -38,59 +38,108 @@ import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginRequirem
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
+import static java.lang.System.out;
+
 /**
  * Orchestrates the loading and instantiation of plugins
  */
 public class PluginsLoader {
-  private static final Logger LOG = Loggers.get(PluginsLoader.class);
-  private final SonarPluginRequirementsChecker requirementsChecker = new SonarPluginRequirementsChecker();
 
-  public static class Configuration {
-    private final Set<Path> pluginJarLocations;
-    private final Set<Language> enabledLanguages;
-    private final boolean shouldCheckNodeVersion;
-    private final Optional<Version> nodeCurrentVersion;
+    private static final Logger LOG = Loggers.get(PluginsLoader.class);
+    private final SonarPluginRequirementsChecker requirementsChecker = new SonarPluginRequirementsChecker();
 
-    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages) {
-      this.pluginJarLocations = pluginJarLocations;
-      this.enabledLanguages = enabledLanguages;
-      this.nodeCurrentVersion = Optional.empty();
-      this.shouldCheckNodeVersion = false;
+    public static class Configuration {
+
+        private final Set<Path> pluginJarLocations;
+        private final Set<Language> enabledLanguages;
+        private final boolean shouldCheckNodeVersion;
+        private final Optional<Version> nodeCurrentVersion;
+
+        public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages) {
+            this.pluginJarLocations = pluginJarLocations;
+            this.enabledLanguages = enabledLanguages;
+            this.nodeCurrentVersion = Optional.empty();
+            this.shouldCheckNodeVersion = false;
+        }
+
+        public Configuration(
+            Set<Path> pluginJarLocations,
+            Set<Language> enabledLanguages,
+            Optional<Version> nodeCurrentVersion
+        ) {
+            this.pluginJarLocations = pluginJarLocations;
+            this.enabledLanguages = enabledLanguages;
+            this.nodeCurrentVersion = nodeCurrentVersion;
+            this.shouldCheckNodeVersion = true;
+        }
     }
 
-    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Optional<Version> nodeCurrentVersion) {
-      this.pluginJarLocations = pluginJarLocations;
-      this.enabledLanguages = enabledLanguages;
-      this.nodeCurrentVersion = nodeCurrentVersion;
-      this.shouldCheckNodeVersion = true;
+    public PluginsLoadResult load(Configuration configuration) {
+        var javaSpecVersion = Objects.requireNonNull(
+            System2.INSTANCE.property("java.specification.version"),
+            "Missing Java property 'java.specification.version'"
+        );
+        for (var e : configuration.pluginJarLocations) { // ???
+            out.printf("--- plugin location: %s\n", e.toString());
+        }
+        for (var e : configuration.enabledLanguages) { // ???
+            out.printf("--- enabled language: %s\n", e.toString());
+        }
+        var pluginCheckResultByKeys = requirementsChecker.checkRequirements(
+            configuration.pluginJarLocations,
+            configuration.enabledLanguages,
+            Version.create(javaSpecVersion),
+            configuration.shouldCheckNodeVersion,
+            configuration.nodeCurrentVersion
+        );
+        for (var e : pluginCheckResultByKeys.entrySet()) { // ???
+            out.printf("check plugin: %s\n", e.getKey());
+        }
+        var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
+        logPlugins(nonSkippedPlugins);
+        for (var e : nonSkippedPlugins) { // ???
+            out.printf("nonskiped plugin: %s\n", e.getKey());
+        }
+        var instancesLoader = new PluginInstancesLoader();
+        var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
+        return new PluginsLoadResult(
+            new LoadedPlugins(pluginInstancesByKeys, instancesLoader),
+            pluginCheckResultByKeys
+        );
     }
-  }
 
-  public PluginsLoadResult load(Configuration configuration) {
-    var javaSpecVersion = Objects.requireNonNull(System2.INSTANCE.property("java.specification.version"), "Missing Java property 'java.specification.version'");
-    var pluginCheckResultByKeys = requirementsChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
-      configuration.shouldCheckNodeVersion, configuration.nodeCurrentVersion);
-
-    var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
-    logPlugins(nonSkippedPlugins);
-
-    var instancesLoader = new PluginInstancesLoader();
-    var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
-
-    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader), pluginCheckResultByKeys);
-  }
-
-  private static void logPlugins(Collection<PluginInfo> nonSkippedPlugins) {
-    LOG.debug("Loaded {} plugins", nonSkippedPlugins.size());
-    for (PluginInfo p : nonSkippedPlugins) {
-      LOG.debug("  * {} {} ({})", p.getName(), p.getVersion(), p.getKey());
+    private static void logPlugins(Collection<PluginInfo> nonSkippedPlugins) {
+        LOG.debug("Loaded {} plugins", nonSkippedPlugins.size());
+        for (PluginInfo p : nonSkippedPlugins) {
+            LOG.debug("  * {} {} ({})", p.getName(), p.getVersion(), p.getKey());
+        }
     }
-  }
 
-  private static Collection<PluginInfo> getNonSkippedPlugins(Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys) {
-    return pluginCheckResultByKeys.values().stream()
-      .filter(not(PluginRequirementsCheckResult::isSkipped))
-      .map(PluginRequirementsCheckResult::getPlugin)
-      .collect(toList());
-  }
+    private static Collection<PluginInfo> getNonSkippedPlugins(
+        Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys
+    ) {
+        for (var e : pluginCheckResultByKeys.entrySet()) { // ???
+            if (e.getValue().isSkipped()) {
+                out.printf(
+                    "--- skip plugin %s reason: %s\n",
+                    e.getKey(),
+                    e.getValue()
+                        .getSkipReason()
+                        .orElse(new SkipReason.None())
+                        .toString()
+                );
+            }
+        }
+        return pluginCheckResultByKeys.values().stream()
+            .filter(not(PluginRequirementsCheckResult::isSkipped))
+            // .filter( // ???
+            //     e -> {
+            //         var key = e.getPlugin().getKey();
+            //         return key.equals("pmd") || key.equals("java");
+            //         // return key.equals("pmd");
+            //     }
+            // )
+            .map(PluginRequirementsCheckResult::getPlugin)
+            .collect(toList());
+    }
 }

@@ -26,26 +26,25 @@ import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
 public class PluginRequirementsCheckResult {
 
-  private final PluginInfo plugin;
+    private final PluginInfo plugin;
 
-  @CheckForNull
-  private final SkipReason skipReason;
+    @CheckForNull
+    private final SkipReason skipReason;
 
-  public PluginRequirementsCheckResult(PluginInfo plugin, @Nullable SkipReason skipReason) {
-    this.plugin = plugin;
-    this.skipReason = skipReason;
-  }
+    public PluginRequirementsCheckResult(PluginInfo plugin, @Nullable SkipReason skipReason) {
+        this.plugin = plugin;
+        this.skipReason = skipReason;
+    }
 
-  public PluginInfo getPlugin() {
-    return plugin;
-  }
+    public PluginInfo getPlugin() {
+        return plugin;
+    }
 
-  public Optional<SkipReason> getSkipReason() {
-    return Optional.ofNullable(skipReason);
-  }
+    public Optional<SkipReason> getSkipReason() {
+        return Optional.ofNullable(skipReason);
+    }
 
-  public boolean isSkipped() {
-    return skipReason != null;
-  }
-
+    public boolean isSkipped() {
+        return skipReason != null;
+    }
 }

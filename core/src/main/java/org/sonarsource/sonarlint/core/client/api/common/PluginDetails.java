@@ -25,33 +25,38 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 
 public class PluginDetails {
-  private final String key;
-  private final String name;
-  private final String version;
-  private final SkipReason skipReason;
 
-  public PluginDetails(String key, String name, @Nullable String version, @Nullable SkipReason skipReason) {
-    this.key = key;
-    this.name = name;
-    this.version = version;
-    this.skipReason = skipReason;
-  }
+    private final String key;
+    private final String name;
+    private final String version;
+    private final SkipReason skipReason;
 
-  public String key() {
-    return key;
-  }
+    public PluginDetails(
+        String key,
+        String name,
+        @Nullable String version,
+        @Nullable SkipReason skipReason
+    ) {
+        this.key = key;
+        this.name = name;
+        this.version = version;
+        this.skipReason = skipReason;
+    }
 
-  public String name() {
-    return name;
-  }
+    public String key() {
+        return key;
+    }
 
-  @CheckForNull
-  public String version() {
-    return version;
-  }
+    public String name() {
+        return name;
+    }
 
-  public Optional<SkipReason> skipReason() {
-    return Optional.ofNullable(skipReason);
-  }
+    @CheckForNull
+    public String version() {
+        return version;
+    }
 
+    public Optional<SkipReason> skipReason() {
+        return Optional.ofNullable(skipReason);
+    }
 }

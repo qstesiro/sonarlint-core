@@ -20,5 +20,5 @@
 package org.sonarsource.sonarlint.core.analysis.container;
 
 public enum ContainerLifespan {
-  INSTANCE, MODULE, ANALYSIS
+    INSTANCE, MODULE, ANALYSIS
 }

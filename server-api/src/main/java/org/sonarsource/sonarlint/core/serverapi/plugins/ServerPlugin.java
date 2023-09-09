@@ -20,31 +20,37 @@
 package org.sonarsource.sonarlint.core.serverapi.plugins;
 
 public class ServerPlugin {
-  private final String key;
-  private final String hash;
-  private final String filename;
-  private final boolean sonarLintSupported;
 
-  public ServerPlugin(String key, String hash, String filename, boolean sonarLintSupported) {
-    this.key = key;
-    this.hash = hash;
-    this.filename = filename;
-    this.sonarLintSupported = sonarLintSupported;
-  }
+    private final String key;
+    private final String hash;
+    private final String filename;
+    private final boolean sonarLintSupported;
 
-  public String getKey() {
-    return key;
-  }
+    public ServerPlugin(
+        String key,
+        String hash,
+        String filename,
+        boolean sonarLintSupported
+    ) {
+        this.key = key;
+        this.hash = hash;
+        this.filename = filename;
+        this.sonarLintSupported = sonarLintSupported;
+    }
 
-  public String getHash() {
-    return hash;
-  }
+    public String getKey() {
+        return key;
+    }
 
-  public String getFilename() {
-    return filename;
-  }
+    public String getHash() {
+        return hash;
+    }
 
-  public boolean isSonarLintSupported() {
-    return sonarLintSupported;
-  }
+    public String getFilename() {
+        return filename;
+    }
+
+    public boolean isSonarLintSupported() {
+        return sonarLintSupported;
+    }
 }

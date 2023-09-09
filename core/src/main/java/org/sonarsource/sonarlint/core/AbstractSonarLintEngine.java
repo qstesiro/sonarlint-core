@@ -45,56 +45,74 @@ import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public abstract class AbstractSonarLintEngine implements SonarLintEngine {
-  protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  // Visible for medium tests
-  public abstract AnalysisEngine getAnalysisEngine();
+    protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  protected final ClientLogOutput logOutput;
+    // Visible for medium tests
+    public abstract AnalysisEngine getAnalysisEngine();
 
-  protected AbstractSonarLintEngine(@Nullable ClientLogOutput logOutput) {
-    this.logOutput = logOutput;
-  }
+    protected final ClientLogOutput logOutput;
 
-  @Override
-  public CompletableFuture<Void> declareModule(ClientModuleInfo module) {
-    return getAnalysisEngine().post(new RegisterModuleCommand(module), new ProgressMonitor(null));
-  }
-
-  @Override
-  public CompletableFuture<Void> stopModule(Object moduleKey) {
-    return getAnalysisEngine().post(new UnregisterModuleCommand(moduleKey), new ProgressMonitor(null));
-  }
-
-  @Override
-  public CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
-    return getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null));
-  }
-
-  protected static Map<String, SonarLintRuleDefinition> loadPluginMetadata(LoadedPlugins loadedPlugins, Set<Language> enabledLanguages,
-    boolean includeTemplateRules, boolean hotspotsEnabled) {
-    var ruleExtractor = new RulesDefinitionExtractor();
-    return ruleExtractor.extractRules(loadedPlugins.getPluginInstancesByKeys(), enabledLanguages, includeTemplateRules, hotspotsEnabled).stream()
-      .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
-  }
-
-  protected void setLogging(@Nullable ClientLogOutput logOutput) {
-    if (logOutput != null) {
-      SonarLintLogger.setTarget(logOutput);
-    } else {
-      SonarLintLogger.setTarget(this.logOutput);
+    protected AbstractSonarLintEngine(@Nullable ClientLogOutput logOutput) {
+        this.logOutput = logOutput;
     }
-  }
 
-  protected AnalysisResults postAnalysisCommandAndGetResult(AnalyzeCommand analyzeCommand, @Nullable ClientProgressMonitor monitor) {
-    try {
-      var analysisResults = getAnalysisEngine().post(analyzeCommand, new ProgressMonitor(monitor)).get();
-      return analysisResults == null ? new AnalysisResults() : analysisResults;
-    } catch (ExecutionException e) {
-      throw SonarLintWrappedException.wrap(e.getCause());
-    } catch (Exception e) {
-      throw SonarLintWrappedException.wrap(e);
+    @Override
+    public CompletableFuture<Void> declareModule(ClientModuleInfo module) {
+        return getAnalysisEngine().post(new RegisterModuleCommand(module), new ProgressMonitor(null));
     }
-  }
 
+    @Override
+    public CompletableFuture<Void> stopModule(Object moduleKey) {
+        return getAnalysisEngine().post(new UnregisterModuleCommand(moduleKey), new ProgressMonitor(null));
+    }
+
+    @Override
+    public CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event) {
+        return getAnalysisEngine().post(new NotifyModuleEventCommand(moduleKey, event), new ProgressMonitor(null));
+    }
+
+    protected static
+    Map<String, SonarLintRuleDefinition>
+    loadPluginMetadata(
+        LoadedPlugins loadedPlugins,
+        Set<Language> enabledLanguages,
+        boolean includeTemplateRules,
+        boolean hotspotsEnabled
+    ) {
+        var ruleExtractor = new RulesDefinitionExtractor();
+        return ruleExtractor.extractRules(
+            loadedPlugins.getPluginInstancesByKeys(),
+            enabledLanguages,
+            includeTemplateRules,
+            hotspotsEnabled
+        )
+        .stream()
+        .collect(Collectors.toMap(SonarLintRuleDefinition::getKey, r -> r));
+    }
+
+    protected void setLogging(@Nullable ClientLogOutput logOutput) {
+        if (logOutput != null) {
+            SonarLintLogger.setTarget(logOutput);
+        } else {
+            SonarLintLogger.setTarget(this.logOutput);
+        }
+    }
+
+    protected AnalysisResults postAnalysisCommandAndGetResult(
+        AnalyzeCommand analyzeCommand,
+        @Nullable ClientProgressMonitor monitor
+    ) {
+        try {
+            var analysisResults = getAnalysisEngine().post(
+                analyzeCommand,
+                new ProgressMonitor(monitor)
+            ).get();
+            return analysisResults == null ? new AnalysisResults() : analysisResults;
+        } catch (ExecutionException e) {
+            throw SonarLintWrappedException.wrap(e.getCause());
+        } catch (Exception e) {
+            throw SonarLintWrappedException.wrap(e);
+        }
+    }
 }

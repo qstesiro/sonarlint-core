@@ -30,48 +30,62 @@ import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.rule.RuleKey;
 
 public class ActiveRulesAdapter implements ActiveRules {
-  private final Collection<ActiveRule> allActiveRules;
-  private final Map<String, List<ActiveRule>> activeRulesByRepository = new HashMap<>();
-  private final Map<String, List<ActiveRule>> activeRulesByLanguage = new HashMap<>();
-  private final Map<String, Map<String, ActiveRule>> activeRulesByRepositoryAndKey = new HashMap<>();
-  private final Map<String, Map<String, ActiveRule>> activeRulesByRepositoryAndInternalKey = new HashMap<>();
 
-  public ActiveRulesAdapter(Collection<ActiveRuleAdapter> activeRules) {
-    allActiveRules = List.copyOf(activeRules);
-    for (ActiveRule r : allActiveRules) {
-      if (r.internalKey() != null) {
-        activeRulesByRepositoryAndInternalKey.computeIfAbsent(r.ruleKey().repository(), x -> new HashMap<>()).put(r.internalKey(), r);
-      }
-      activeRulesByRepositoryAndKey.computeIfAbsent(r.ruleKey().repository(), x -> new HashMap<>()).put(r.ruleKey().rule(), r);
-      activeRulesByRepository.computeIfAbsent(r.ruleKey().repository(), x -> new ArrayList<>()).add(r);
-      activeRulesByLanguage.computeIfAbsent(r.language(), x -> new ArrayList<>()).add(r);
+    private final Collection<ActiveRule> allActiveRules;
+    private final Map<String, List<ActiveRule>> activeRulesByRepository = new HashMap<>();
+    private final Map<String, List<ActiveRule>> activeRulesByLanguage = new HashMap<>();
+    private final Map<String, Map<String, ActiveRule>> activeRulesByRepositoryAndKey = new HashMap<>();
+    private final Map<String, Map<String, ActiveRule>> activeRulesByRepositoryAndInternalKey = new HashMap<>();
+
+    public ActiveRulesAdapter(Collection<ActiveRuleAdapter> activeRules) {
+        allActiveRules = List.copyOf(activeRules);
+        for (ActiveRule r : allActiveRules) {
+            if (r.internalKey() != null) {
+                activeRulesByRepositoryAndInternalKey.computeIfAbsent(
+                    r.ruleKey().repository(), x -> new HashMap<>()
+                ).put(r.internalKey(), r);
+            }
+            activeRulesByRepositoryAndKey.computeIfAbsent(
+                r.ruleKey().repository(), x -> new HashMap<>()
+            ).put(r.ruleKey().rule(), r);
+            activeRulesByRepository.computeIfAbsent(
+                r.ruleKey().repository(), x -> new ArrayList<>()
+            ).add(r);
+            activeRulesByLanguage.computeIfAbsent(
+                r.language(), x -> new ArrayList<>()
+            ).add(r);
+        }
     }
-  }
 
-  @Override
-  public ActiveRule find(RuleKey ruleKey) {
-    return activeRulesByRepositoryAndKey.getOrDefault(ruleKey.repository(), Collections.emptyMap())
-      .get(ruleKey.rule());
-  }
+    @Override
+    public ActiveRule find(RuleKey ruleKey) {
+        return activeRulesByRepositoryAndKey
+            .getOrDefault(ruleKey.repository(), Collections.emptyMap())
+            .get(ruleKey.rule());
+    }
 
-  @Override
-  public Collection<ActiveRule> findAll() {
-    return allActiveRules;
-  }
+    @Override
+    public Collection<ActiveRule> findAll() {
+        return allActiveRules;
+    }
 
-  @Override
-  public Collection<ActiveRule> findByRepository(String repository) {
-    return activeRulesByRepository.getOrDefault(repository, Collections.emptyList());
-  }
+    @Override
+    public Collection<ActiveRule> findByRepository(String repository) {
+        return activeRulesByRepository
+            .getOrDefault(repository, Collections.emptyList());
+    }
 
-  @Override
-  public Collection<ActiveRule> findByLanguage(String language) {
-    return activeRulesByLanguage.getOrDefault(language, Collections.emptyList());
-  }
+    @Override
+    public Collection<ActiveRule> findByLanguage(String language) {
+        return activeRulesByLanguage
+            .getOrDefault(language, Collections.emptyList());
+    }
 
-  @Override
-  public ActiveRule findByInternalKey(String repository, String internalKey) {
-    return activeRulesByRepositoryAndInternalKey.containsKey(repository) ? activeRulesByRepositoryAndInternalKey.get(repository).get(internalKey) : null;
-  }
+    @Override
+    public ActiveRule findByInternalKey(String repository, String internalKey) {
+        return activeRulesByRepositoryAndInternalKey.containsKey(repository)
+            ? activeRulesByRepositoryAndInternalKey.get(repository).get(internalKey)
+            : null;
+    }
 
 }

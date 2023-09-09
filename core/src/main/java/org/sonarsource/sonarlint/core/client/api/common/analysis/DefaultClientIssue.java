@@ -31,111 +31,119 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public final class DefaultClientIssue implements Issue {
-  private final IssueSeverity severity;
-  private final RuleType type;
-  private final String ruleKey;
-  private final String primaryMessage;
-  private final ClientInputFile clientInputFile;
-  private final List<Flow> flows;
-  private final List<QuickFix> quickFixes;
-  private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
-  private final Optional<String> ruleDescriptionContextKey;
-  private final Optional<VulnerabilityProbability> vulnerabilityProbability;
 
-  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, SonarLintRuleDefinition sonarLintRuleDefinition) {
-    this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
-    this.primaryMessage = i.getMessage();
-    this.clientInputFile = i.getInputFile();
-    this.flows = i.flows();
-    this.quickFixes = i.quickFixes();
-    this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
-    this.severity = sonarLintRuleDefinition.getDefaultSeverity();
-    this.type = sonarLintRuleDefinition.getType();
-    this.ruleKey = sonarLintRuleDefinition.getKey();
-    this.vulnerabilityProbability = sonarLintRuleDefinition.getVulnerabilityProbability();
-  }
+    private final IssueSeverity severity;
+    private final RuleType type;
+    private final String ruleKey;
+    private final String primaryMessage;
+    private final ClientInputFile clientInputFile;
+    private final List<Flow> flows;
+    private final List<QuickFix> quickFixes;
+    private final org.sonarsource.sonarlint.core.commons.TextRange textRange;
+    private final Optional<String> ruleDescriptionContextKey;
+    private final Optional<VulnerabilityProbability> vulnerabilityProbability;
 
-  public DefaultClientIssue(org.sonarsource.sonarlint.core.analysis.api.Issue i, IssueSeverity severity,
-    RuleType type, Optional<VulnerabilityProbability> vulnerabilityProbability) {
-    this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
-    this.primaryMessage = i.getMessage();
-    this.clientInputFile = i.getInputFile();
-    this.flows = i.flows();
-    this.quickFixes = i.quickFixes();
-    this.severity = severity;
-    this.type = type;
-    this.ruleKey = i.getRuleKey();
-    this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
-    this.vulnerabilityProbability = vulnerabilityProbability;
-  }
-
-  @Override
-  public IssueSeverity getSeverity() {
-    return severity;
-  }
-
-  @Override
-  public RuleType getType() {
-    return type;
-  }
-
-  @Override
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  @Override
-  public String getMessage() {
-    return primaryMessage;
-  }
-
-  @SuppressWarnings("unchecked")
-  @CheckForNull
-  @Override
-  public ClientInputFile getInputFile() {
-    return clientInputFile;
-  }
-
-  @Override
-  public List<Flow> flows() {
-    return flows;
-  }
-
-  @Override
-  public List<QuickFix> quickFixes() {
-    return quickFixes;
-  }
-
-  @Override
-  public Optional<String> getRuleDescriptionContextKey() {
-    return ruleDescriptionContextKey;
-  }
-
-  @Override
-  public Optional<VulnerabilityProbability> getVulnerabilityProbability() {
-    return vulnerabilityProbability;
-  }
-
-  @CheckForNull
-  @Override
-  public org.sonarsource.sonarlint.core.commons.TextRange getTextRange() {
-    return textRange;
-  }
-
-  @Override
-  public String toString() {
-    var sb = new StringBuilder();
-    sb.append("[");
-    sb.append("rule=").append(ruleKey);
-    sb.append(", severity=").append(severity);
-    var startLine = getStartLine();
-    if (startLine != null) {
-      sb.append(", line=").append(startLine);
+    public DefaultClientIssue(
+        org.sonarsource.sonarlint.core.analysis.api.Issue i,
+        SonarLintRuleDefinition sonarLintRuleDefinition
+    ) {
+        this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
+        this.primaryMessage = i.getMessage();
+        this.clientInputFile = i.getInputFile();
+        this.flows = i.flows();
+        this.quickFixes = i.quickFixes();
+        this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
+        this.severity = sonarLintRuleDefinition.getDefaultSeverity();
+        this.type = sonarLintRuleDefinition.getType();
+        this.ruleKey = sonarLintRuleDefinition.getKey();
+        this.vulnerabilityProbability = sonarLintRuleDefinition.getVulnerabilityProbability();
     }
-    if (clientInputFile != null) {
-      sb.append(", file=").append(clientInputFile.uri());
+
+    public DefaultClientIssue(
+        org.sonarsource.sonarlint.core.analysis.api.Issue i,
+        IssueSeverity severity,
+        RuleType type,
+        Optional<VulnerabilityProbability> vulnerabilityProbability
+    ) {
+        this.textRange = i.getTextRange() != null ? i.getTextRange() : null;
+        this.primaryMessage = i.getMessage();
+        this.clientInputFile = i.getInputFile();
+        this.flows = i.flows();
+        this.quickFixes = i.quickFixes();
+        this.severity = severity;
+        this.type = type;
+        this.ruleKey = i.getRuleKey();
+        this.ruleDescriptionContextKey = i.getRuleDescriptionContextKey();
+        this.vulnerabilityProbability = vulnerabilityProbability;
     }
-    sb.append("]");
-    return sb.toString();
-  }
+
+    @Override
+    public IssueSeverity getSeverity() {
+        return severity;
+    }
+
+    @Override
+    public RuleType getType() {
+        return type;
+    }
+
+    @Override
+    public String getRuleKey() {
+        return ruleKey;
+    }
+
+    @Override
+    public String getMessage() {
+        return primaryMessage;
+    }
+
+    @SuppressWarnings("unchecked")
+    @CheckForNull
+    @Override
+    public ClientInputFile getInputFile() {
+        return clientInputFile;
+    }
+
+    @Override
+    public List<Flow> flows() {
+        return flows;
+    }
+
+    @Override
+    public List<QuickFix> quickFixes() {
+        return quickFixes;
+    }
+
+    @Override
+    public Optional<String> getRuleDescriptionContextKey() {
+        return ruleDescriptionContextKey;
+    }
+
+    @Override
+    public Optional<VulnerabilityProbability> getVulnerabilityProbability() {
+        return vulnerabilityProbability;
+    }
+
+    @CheckForNull
+    @Override
+    public org.sonarsource.sonarlint.core.commons.TextRange getTextRange() {
+        return textRange;
+    }
+
+    @Override
+    public String toString() {
+        var sb = new StringBuilder();
+        sb.append("[");
+        sb.append("rule=").append(ruleKey);
+        sb.append(", severity=").append(severity);
+        var startLine = getStartLine();
+        if (startLine != null) {
+            sb.append(", line=").append(startLine);
+        }
+        if (clientInputFile != null) {
+            sb.append(", file=").append(clientInputFile.uri());
+        }
+        sb.append("]");
+        return sb.toString();
+    }
 }

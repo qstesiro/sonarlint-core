@@ -34,53 +34,54 @@ import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentCo
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
 public class RulesDefinitionExtractorContainer extends SpringComponentContainer {
-  private Context rulesDefinitionContext;
-  private final Map<String, Plugin> pluginInstancesByKeys;
 
-  public RulesDefinitionExtractorContainer(Map<String, Plugin> pluginInstancesByKeys) {
-    this.pluginInstancesByKeys = pluginInstancesByKeys;
-  }
+    private Context rulesDefinitionContext;
+    private final Map<String, Plugin> pluginInstancesByKeys;
 
-  @Override
-  protected void doBeforeStart() {
-    var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
-    var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
+    public RulesDefinitionExtractorContainer(Map<String, Plugin> pluginInstancesByKeys) {
+        this.pluginInstancesByKeys = pluginInstancesByKeys;
+    }
 
-    var sonarLintRuntime = new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, -1);
+    @Override
+    protected void doBeforeStart() {
+        var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
+        var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
+        var sonarLintRuntime = new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, -1);
+        var config = new EmptyConfiguration();
+        var extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
+        extensionInstaller.install( // 注册所有SINGLE_ANALYSIS扩展点,除了Sensor
+            this,
+            pluginInstancesByKeys,
+            (key, ext) -> {
+                if (ExtensionUtils.isType(ext, Sensor.class)) {
+                    // Optimization, and allows to run with the Xoo plugin
+                    return false;
+                }
+                var annotation = AnnotationUtils.getAnnotation(ext, SonarLintSide.class);
+                if (annotation != null) {
+                    var lifespan = annotation.lifespan();
+                    return SonarLintSide.SINGLE_ANALYSIS.equals(lifespan);
+                }
+                return false;
+            }
+        );
+        add(
+            config,
+            sonarLintRuntime,
+            new SonarQubeVersion(sonarPluginApiVersion),
+            RulesDefinitionXmlLoader.class,
+            RuleDefinitionsLoader.class,
+            NoopTempFolder.class,
+            EmptySettings.class
+        );
+    }
 
-    var config = new EmptyConfiguration();
+    @Override
+    protected void doAfterStart() {
+        this.rulesDefinitionContext = getComponentByType(RuleDefinitionsLoader.class).getContext();
+    }
 
-    var extensionInstaller = new ExtensionInstaller(sonarLintRuntime, config);
-    extensionInstaller.install(this, pluginInstancesByKeys, (key, ext) -> {
-      if (ExtensionUtils.isType(ext, Sensor.class)) {
-        // Optimization, and allows to run with the Xoo plugin
-        return false;
-      }
-      var annotation = AnnotationUtils.getAnnotation(ext, SonarLintSide.class);
-      if (annotation != null) {
-        var lifespan = annotation.lifespan();
-        return SonarLintSide.SINGLE_ANALYSIS.equals(lifespan);
-      }
-      return false;
-    });
-
-    add(
-      config,
-      sonarLintRuntime,
-      new SonarQubeVersion(sonarPluginApiVersion),
-      RulesDefinitionXmlLoader.class,
-      RuleDefinitionsLoader.class,
-      NoopTempFolder.class,
-      EmptySettings.class);
-  }
-
-  @Override
-  protected void doAfterStart() {
-    this.rulesDefinitionContext = getComponentByType(RuleDefinitionsLoader.class).getContext();
-  }
-
-  public Context getRulesDefinitionContext() {
-    return rulesDefinitionContext;
-  }
-
+    public Context getRulesDefinitionContext() {
+        return rulesDefinitionContext;
+    }
 }

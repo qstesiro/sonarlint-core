@@ -28,34 +28,50 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStores
 
 public class ServerHotspotUpdater {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ServerIssueStoresManager serverIssueStoresManager;
+    private final ServerIssueStoresManager serverIssueStoresManager;
 
-  public ServerHotspotUpdater(ServerIssueStoresManager serverIssueStoresManager) {
-    this.serverIssueStoresManager = serverIssueStoresManager;
-  }
-
-  public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, ProgressMonitor progress) {
-    if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var projectHotspots = hotspotApi.getAll(projectKey, branchName, progress);
-      serverIssueStoresManager.get(projectKey).replaceAllHotspotsOfBranch(branchName, projectHotspots);
-    } else {
-      LOG.info("Skip downloading hotspots from server, not supported");
+    public ServerHotspotUpdater(ServerIssueStoresManager serverIssueStoresManager) {
+        this.serverIssueStoresManager = serverIssueStoresManager;
     }
-  }
 
-  public void updateForFile(HotspotApi hotspotApi, ProjectBinding projectBinding, String ideFilePath, String branchName, Supplier<Version> serverVersionSupplier) {
-    String serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
-    if (serverFilePath == null) {
-      return;
+    public void updateAll(
+        HotspotApi hotspotApi,
+        String projectKey,
+        String branchName,
+        Supplier<Version> serverVersionSupplier,
+        ProgressMonitor progress
+    ) {
+        if (hotspotApi.permitsTracking(serverVersionSupplier)) {
+            var projectHotspots = hotspotApi.getAll(projectKey, branchName, progress);
+            serverIssueStoresManager
+                .get(projectKey)
+                .replaceAllHotspotsOfBranch(branchName, projectHotspots);
+        } else {
+            LOG.info("Skip downloading hotspots from server, not supported");
+        }
     }
-    if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var projectKey = projectBinding.projectKey();
-      var projectHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
-      serverIssueStoresManager.get(projectKey).replaceAllHotspotsOfFile(branchName, serverFilePath, projectHotspots);
-    } else {
-      LOG.info("Skip downloading hotspots for file, not supported");
+
+    public void updateForFile(
+        HotspotApi hotspotApi,
+        ProjectBinding projectBinding,
+        String ideFilePath,
+        String branchName,
+        Supplier<Version> serverVersionSupplier
+    ) {
+        String serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
+        if (serverFilePath == null) {
+            return;
+        }
+        if (hotspotApi.permitsTracking(serverVersionSupplier)) {
+            var projectKey = projectBinding.projectKey();
+            var projectHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
+            serverIssueStoresManager
+                .get(projectKey)
+                .replaceAllHotspotsOfFile(branchName, serverFilePath, projectHotspots);
+        } else {
+            LOG.info("Skip downloading hotspots for file, not supported");
+        }
     }
-  }
 }

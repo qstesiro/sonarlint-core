@@ -34,113 +34,113 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class SonarLintFileSystem implements FileSystem {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final DefaultFilePredicates filePredicates;
-  private final Path baseDir;
-  private Charset encoding;
+    private final DefaultFilePredicates filePredicates;
+    private final Path baseDir;
+    private Charset encoding;
 
-  private final InputFileIndex inputFileCache;
+    private final InputFileIndex inputFileCache;
 
-  public SonarLintFileSystem(AnalysisConfiguration analysisConfiguration, InputFileIndex inputFileCache) {
-    this.inputFileCache = inputFileCache;
-    this.baseDir = analysisConfiguration.baseDir();
-    this.filePredicates = new DefaultFilePredicates();
-  }
-
-  @Override
-  public File workDir() {
-    LOG.warn("No workDir in SonarLint");
-    return baseDir();
-  }
-
-  @Override
-  public InputDir inputDir(File dir) {
-    return new SonarLintInputDir(dir.toPath());
-  }
-
-  @Override
-  public FilePredicates predicates() {
-    return filePredicates;
-  }
-
-  @Override
-  public File baseDir() {
-    return baseDir.toFile();
-  }
-
-  private SonarLintFileSystem setEncoding(Charset c) {
-    LOG.debug("Setting filesystem encoding: " + c);
-    this.encoding = c;
-    return this;
-  }
-
-  @Override
-  public Charset encoding() {
-    if (encoding == null) {
-      setEncoding(StreamSupport.stream(inputFiles().spliterator(), false)
-        .map(InputFile::charset)
-        .findFirst()
-        .orElse(Charset.defaultCharset()));
-    }
-    return encoding;
-  }
-
-  @Override
-  public InputFile inputFile(FilePredicate predicate) {
-    var files = inputFiles(predicate);
-    var iterator = files.iterator();
-    if (!iterator.hasNext()) {
-      return null;
-    }
-    var first = iterator.next();
-    if (!iterator.hasNext()) {
-      return first;
+    public SonarLintFileSystem(AnalysisConfiguration analysisConfiguration, InputFileIndex inputFileCache) {
+        this.inputFileCache = inputFileCache;
+        this.baseDir = analysisConfiguration.baseDir();
+        this.filePredicates = new DefaultFilePredicates();
     }
 
-    var sb = new StringBuilder();
-    sb.append("expected one element but was: <" + first);
-    for (var i = 0; i < 4 && iterator.hasNext(); i++) {
-      sb.append(", " + iterator.next());
+    @Override
+    public File workDir() {
+        LOG.warn("No workDir in SonarLint");
+        return baseDir();
     }
-    if (iterator.hasNext()) {
-      sb.append(", ...");
+
+    @Override
+    public InputDir inputDir(File dir) {
+        return new SonarLintInputDir(dir.toPath());
     }
-    sb.append('>');
 
-    throw new IllegalArgumentException(sb.toString());
+    @Override
+    public FilePredicates predicates() {
+        return filePredicates;
+    }
 
-  }
+    @Override
+    public File baseDir() {
+        return baseDir.toFile();
+    }
 
-  public Iterable<InputFile> inputFiles() {
-    return inputFiles(filePredicates.all());
-  }
+    private SonarLintFileSystem setEncoding(Charset c) {
+        LOG.debug("Setting filesystem encoding: " + c);
+        this.encoding = c;
+        return this;
+    }
 
-  @Override
-  public Iterable<InputFile> inputFiles(FilePredicate predicate) {
-    return OptimizedFilePredicateAdapter.create(predicate).get(inputFileCache);
-  }
+    @Override
+    public Charset encoding() {
+        if (encoding == null) {
+            setEncoding(StreamSupport.stream(inputFiles().spliterator(), false)
+                        .map(InputFile::charset)
+                        .findFirst()
+                        .orElse(Charset.defaultCharset()));
+        }
+        return encoding;
+    }
 
-  @Override
-  public boolean hasFiles(FilePredicate predicate) {
-    return inputFiles(predicate).iterator().hasNext();
-  }
+    @Override
+    public InputFile inputFile(FilePredicate predicate) {
+        var files = inputFiles(predicate);
+        var iterator = files.iterator();
+        if (!iterator.hasNext()) {
+            return null;
+        }
+        var first = iterator.next();
+        if (!iterator.hasNext()) {
+            return first;
+        }
 
-  @Override
-  public Iterable<File> files(FilePredicate predicate) {
-    return () -> StreamSupport.stream(inputFiles(predicate).spliterator(), false)
-      .map(InputFile::file)
-      .iterator();
-  }
+        var sb = new StringBuilder();
+        sb.append("expected one element but was: <" + first);
+        for (var i = 0; i < 4 && iterator.hasNext(); i++) {
+            sb.append(", " + iterator.next());
+        }
+        if (iterator.hasNext()) {
+            sb.append(", ...");
+        }
+        sb.append('>');
 
-  @Override
-  public SortedSet<String> languages() {
-    return inputFileCache.languages();
-  }
+        throw new IllegalArgumentException(sb.toString());
 
-  @Override
-  public File resolvePath(String path) {
-    throw new UnsupportedOperationException("resolvePath");
-  }
+    }
+
+    public Iterable<InputFile> inputFiles() {
+        return inputFiles(filePredicates.all());
+    }
+
+    @Override
+    public Iterable<InputFile> inputFiles(FilePredicate predicate) {
+        return OptimizedFilePredicateAdapter.create(predicate).get(inputFileCache);
+    }
+
+    @Override
+    public boolean hasFiles(FilePredicate predicate) {
+        return inputFiles(predicate).iterator().hasNext();
+    }
+
+    @Override
+    public Iterable<File> files(FilePredicate predicate) {
+        return () -> StreamSupport.stream(inputFiles(predicate).spliterator(), false)
+            .map(InputFile::file)
+            .iterator();
+    }
+
+    @Override
+    public SortedSet<String> languages() {
+        return inputFileCache.languages();
+    }
+
+    @Override
+    public File resolvePath(String path) {
+        throw new UnsupportedOperationException("resolvePath");
+    }
 
 }

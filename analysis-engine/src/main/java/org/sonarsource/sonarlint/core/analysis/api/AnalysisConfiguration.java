@@ -31,138 +31,140 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class AnalysisConfiguration {
 
-  private final Iterable<ClientInputFile> inputFiles;
-  private final Map<String, String> extraProperties;
-  private final Path baseDir;
-  private final Collection<ActiveRule> activeRules;
-  private final String toString;
+    private final Iterable<ClientInputFile> inputFiles;
+    private final Map<String, String> extraProperties;
+    private final Path baseDir;
+    private final Collection<ActiveRule> activeRules;
+    private final String toString;
 
-  private AnalysisConfiguration(Builder builder) {
-    this.baseDir = builder.baseDir;
-    this.inputFiles = builder.inputFiles;
-    this.extraProperties = builder.extraProperties;
-    this.activeRules = builder.activeRules;
-    this.toString = generateToString();
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  public Map<String, String> extraProperties() {
-    return extraProperties;
-  }
-
-  public Path baseDir() {
-    return baseDir;
-  }
-
-  public Iterable<ClientInputFile> inputFiles() {
-    return inputFiles;
-  }
-
-  public Collection<ActiveRule> activeRules() {
-    return activeRules;
-  }
-
-  @Override
-  public String toString() {
-    return toString;
-  }
-
-  private String generateToString() {
-    var sb = new StringBuilder();
-    sb.append("[\n");
-    generateToStringCommon(sb);
-    sb.append("  activeRules: ").append(activeRules).append("\n");
-    generateToStringInputFiles(sb);
-    sb.append("]\n");
-    return sb.toString();
-  }
-
-  protected void generateToStringCommon(StringBuilder sb) {
-    sb.append("  baseDir: ").append(baseDir()).append("\n");
-    sb.append("  extraProperties: ").append(extraProperties()).append("\n");
-  }
-
-  protected void generateToStringInputFiles(StringBuilder sb) {
-    sb.append("  inputFiles: [\n");
-    for (ClientInputFile inputFile : inputFiles()) {
-      sb.append("    ").append(inputFile.uri());
-      sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
-      if (inputFile.isTest()) {
-        sb.append(" [test]");
-      }
-      var language = inputFile.language();
-      if (language != null) {
-        sb.append(" [" + language.getLanguageKey() + "]");
-      }
-      sb.append("\n");
-    }
-    sb.append("  ]\n");
-  }
-
-  private static String getCharsetLabel(ClientInputFile inputFile) {
-    var charset = inputFile.getCharset();
-    return charset != null ? charset.displayName() : "default";
-  }
-
-  public static final class Builder {
-    private final List<ClientInputFile> inputFiles = new ArrayList<>();
-    private final Map<String, String> extraProperties = new HashMap<>();
-    private Path baseDir;
-    private final Collection<ActiveRule> activeRules = new ArrayList<>();
-
-    private Builder() {
+    private AnalysisConfiguration(Builder builder) {
+        this.baseDir = builder.baseDir;
+        this.inputFiles = builder.inputFiles;
+        this.extraProperties = builder.extraProperties;
+        this.activeRules = builder.activeRules;
+        this.toString = generateToString();
     }
 
-    public Builder addInputFiles(ClientInputFile... inputFiles) {
-      Collections.addAll(this.inputFiles, inputFiles);
-      return this;
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public Builder addInputFiles(Collection<? extends ClientInputFile> inputFiles) {
-      this.inputFiles.addAll(inputFiles);
-      return this;
+    public Map<String, String> extraProperties() {
+        return extraProperties;
     }
 
-    public Builder addInputFile(ClientInputFile inputFile) {
-      this.inputFiles.add(inputFile);
-      return this;
+    public Path baseDir() {
+        return baseDir;
     }
 
-    public Builder putAllExtraProperties(Map<String, String> extraProperties) {
-      this.extraProperties.putAll(extraProperties);
-      return this;
+    public Iterable<ClientInputFile> inputFiles() {
+        return inputFiles;
     }
 
-    public Builder putExtraProperty(String key, String value) {
-      this.extraProperties.put(key, value);
-      return this;
+    public Collection<ActiveRule> activeRules() {
+        return activeRules;
     }
 
-    public Builder setBaseDir(Path baseDir) {
-      this.baseDir = baseDir;
-      return this;
+    @Override
+    public String toString() {
+        return toString;
     }
 
-    public Builder addActiveRules(ActiveRule... activeRules) {
-      Collections.addAll(this.activeRules, activeRules);
-      return this;
+    private String generateToString() {
+        var sb = new StringBuilder();
+        sb.append("[\n");
+        generateToStringCommon(sb);
+        sb.append("  activeRules: ").append(activeRules).append("\n");
+        generateToStringInputFiles(sb);
+        sb.append("]\n");
+        return sb.toString();
     }
 
-    public Builder addActiveRules(Collection<? extends ActiveRule> activeRules) {
-      this.activeRules.addAll(activeRules);
-      return this;
+    protected void generateToStringCommon(StringBuilder sb) {
+        sb.append("  baseDir: ").append(baseDir()).append("\n");
+        sb.append("  extraProperties: ").append(extraProperties()).append("\n");
     }
 
-    public Builder addActiveRule(ActiveRule activeRules) {
-      this.activeRules.add(activeRules);
-      return this;
+    protected void generateToStringInputFiles(StringBuilder sb) {
+        sb.append("  inputFiles: [\n");
+        for (ClientInputFile inputFile : inputFiles()) {
+            sb.append("    ").append(inputFile.uri());
+            sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
+            if (inputFile.isTest()) {
+                sb.append(" [test]");
+            }
+            var language = inputFile.language();
+            if (language != null) {
+                sb.append(" [" + language.getLanguageKey() + "]");
+            }
+            sb.append("\n");
+        }
+        sb.append("  ]\n");
     }
 
-    public AnalysisConfiguration build() {
-      return new AnalysisConfiguration(this);
+    private static String getCharsetLabel(ClientInputFile inputFile) {
+        var charset = inputFile.getCharset();
+        return charset != null ? charset.displayName() : "default";
     }
-  }
+
+    public static final class Builder {
+
+        private final List<ClientInputFile> inputFiles = new ArrayList<>();
+        private final Map<String, String> extraProperties = new HashMap<>();
+
+        private Path baseDir;
+        private final Collection<ActiveRule> activeRules = new ArrayList<>();
+
+        private Builder() {
+        }
+
+        public Builder addInputFiles(ClientInputFile... inputFiles) {
+            Collections.addAll(this.inputFiles, inputFiles);
+            return this;
+        }
+
+        public Builder addInputFiles(Collection<? extends ClientInputFile> inputFiles) {
+            this.inputFiles.addAll(inputFiles);
+            return this;
+        }
+
+        public Builder addInputFile(ClientInputFile inputFile) {
+            this.inputFiles.add(inputFile);
+            return this;
+        }
+
+        public Builder putAllExtraProperties(Map<String, String> extraProperties) {
+            this.extraProperties.putAll(extraProperties);
+            return this;
+        }
+
+        public Builder putExtraProperty(String key, String value) {
+            this.extraProperties.put(key, value);
+            return this;
+        }
+
+        public Builder setBaseDir(Path baseDir) {
+            this.baseDir = baseDir;
+            return this;
+        }
+
+        public Builder addActiveRules(ActiveRule... activeRules) {
+            Collections.addAll(this.activeRules, activeRules);
+            return this;
+        }
+
+        public Builder addActiveRules(Collection<? extends ActiveRule> activeRules) {
+            this.activeRules.addAll(activeRules);
+            return this;
+        }
+
+        public Builder addActiveRule(ActiveRule activeRules) {
+            this.activeRules.add(activeRules);
+            return this;
+        }
+
+        public AnalysisConfiguration build() {
+            return new AnalysisConfiguration(this);
+        }
+    }
 }

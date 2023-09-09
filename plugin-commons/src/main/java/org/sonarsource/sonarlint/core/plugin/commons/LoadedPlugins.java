@@ -24,20 +24,24 @@ import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
 
 public class LoadedPlugins {
-  private final Map<String, Plugin> pluginInstancesByKeys;
-  private final PluginInstancesLoader pluginInstancesLoader;
 
-  public LoadedPlugins(Map<String, Plugin> pluginInstancesByKeys, PluginInstancesLoader pluginInstancesLoader) {
-    this.pluginInstancesByKeys = pluginInstancesByKeys;
-    this.pluginInstancesLoader = pluginInstancesLoader;
-  }
+    private final Map<String, Plugin> pluginInstancesByKeys;
+    private final PluginInstancesLoader pluginInstancesLoader;
 
-  public Map<String, Plugin> getPluginInstancesByKeys() {
-    return pluginInstancesByKeys;
-  }
+    public LoadedPlugins(
+        Map<String, Plugin> pluginInstancesByKeys,
+        PluginInstancesLoader pluginInstancesLoader
+    ) {
+        this.pluginInstancesByKeys = pluginInstancesByKeys;
+        this.pluginInstancesLoader = pluginInstancesLoader;
+    }
 
-  public void unload() {
-    // close plugins classloaders
-    pluginInstancesLoader.unload();
-  }
+    public Map<String, Plugin> getPluginInstancesByKeys() {
+        return pluginInstancesByKeys;
+    }
+
+    public void unload() {
+        // close plugins classloaders
+        pluginInstancesLoader.unload();
+    }
 }

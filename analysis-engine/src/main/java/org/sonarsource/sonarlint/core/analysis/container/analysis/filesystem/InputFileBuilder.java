@@ -28,39 +28,51 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.s
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class InputFileBuilder {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final LanguageDetection langDetection;
-  private final FileMetadata fileMetadata;
-  private final IssueExclusionsLoader exclusionsScanner;
 
-  public InputFileBuilder(LanguageDetection langDetection, FileMetadata fileMetadata, IssueExclusionsLoader exclusionsScanner) {
-    this.langDetection = langDetection;
-    this.fileMetadata = fileMetadata;
-    this.exclusionsScanner = exclusionsScanner;
-  }
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private final LanguageDetection langDetection;
+    private final FileMetadata fileMetadata;
+    private final IssueExclusionsLoader exclusionsScanner;
 
-  SonarLintInputFile create(ClientInputFile inputFile) {
-    var defaultInputFile = new SonarLintInputFile(inputFile, f -> {
-      LOG.debug("Initializing metadata of file {}", f.uri());
-      var charset = f.charset();
-      InputStream stream;
-      try {
-        stream = f.inputStream();
-      } catch (IOException e) {
-        throw new IllegalStateException("Failed to open a stream on file: " + f.uri(), e);
-      }
-      return fileMetadata.readMetadata(stream, charset != null ? charset : Charset.defaultCharset(), f.uri(), exclusionsScanner.createCharHandlerFor(f));
-    });
-    defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
-    var fileLanguage = inputFile.language();
-    if (fileLanguage != null) {
-      LOG.debug("Language of file '{}' is set to '{}'", inputFile.uri(), fileLanguage);
-      defaultInputFile.setLanguage(fileLanguage);
-    } else {
-      defaultInputFile.setLanguage(langDetection.language(defaultInputFile));
+    public InputFileBuilder(
+        LanguageDetection langDetection,
+        FileMetadata fileMetadata,
+        IssueExclusionsLoader exclusionsScanner
+    ) {
+        this.langDetection = langDetection;
+        this.fileMetadata = fileMetadata;
+        this.exclusionsScanner = exclusionsScanner;
     }
 
-    return defaultInputFile;
-  }
+    SonarLintInputFile create(ClientInputFile inputFile) {
+        var defaultInputFile = new SonarLintInputFile(
+            inputFile,
+            f -> {
+                LOG.debug("Initializing metadata of file {}", f.uri());
+                var charset = f.charset();
+                InputStream stream;
+                try {
+                    stream = f.inputStream();
+                } catch (IOException e) {
+                    throw new IllegalStateException("Failed to open a stream on file: " + f.uri(), e);
+                }
+                return fileMetadata.readMetadata(
+                    stream,
+                    charset != null ? charset : Charset.defaultCharset(),
+                    f.uri(),
+                    exclusionsScanner.createCharHandlerFor(f)
+                );
+            }
+        );
+        defaultInputFile.setType(inputFile.isTest() ? Type.TEST : Type.MAIN);
+        var fileLanguage = inputFile.language();
+        if (fileLanguage != null) {
+            LOG.debug("Language of file '{}' is set to '{}'", inputFile.uri(), fileLanguage);
+            defaultInputFile.setLanguage(fileLanguage);
+        } else {
+            defaultInputFile.setLanguage(langDetection.language(defaultInputFile));
+        }
+        return defaultInputFile;
+    }
 
 }

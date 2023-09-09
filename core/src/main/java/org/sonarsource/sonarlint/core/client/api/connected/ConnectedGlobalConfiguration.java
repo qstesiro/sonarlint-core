@@ -30,116 +30,120 @@ import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfigurat
  */
 public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
-  public static final String DEFAULT_STORAGE_DIR = "storage";
+    public static final String DEFAULT_STORAGE_DIR = "storage";
 
-  private final String connectionId;
-  private final Path storageRoot;
-  private final Map<String, Path> overriddenPluginsPathsByKey;
-  private final Map<String, Path> extraPluginsPathsByKey;
-  private final boolean isSonarCloud;
-  private final boolean isHotspotsEnabled;
-
-  private ConnectedGlobalConfiguration(Builder builder) {
-    super(builder);
-    this.connectionId = builder.connectionId;
-    this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
-    this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
-    this.extraPluginsPathsByKey = new HashMap<>(builder.extraPluginsPathsByKey);
-    this.isSonarCloud = builder.isSonarCloud;
-    this.isHotspotsEnabled = builder.isHotspotsEnabled;
-  }
-
-  public static Builder sonarQubeBuilder() {
-    return new Builder(false);
-  }
-
-  public static Builder sonarCloudBuilder() {
-    return new Builder(true);
-  }
-
-  public boolean isSonarCloud() {
-    return isSonarCloud;
-  }
-
-  public boolean isHotspotsEnabled() {
-    return isHotspotsEnabled;
-  }
-
-  public Path getStorageRoot() {
-    return storageRoot;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public Map<String, Path> getEmbeddedPluginPathsByKey() {
-    return overriddenPluginsPathsByKey;
-  }
-
-  public Map<String, Path> getExtraPluginsPathsByKey() {
-    return extraPluginsPathsByKey;
-  }
-
-  public static final class Builder extends AbstractBuilder<Builder> {
-    private String connectionId;
-    private Path storageRoot;
-    private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
-    private final Map<String, Path> extraPluginsPathsByKey = new HashMap<>();
+    private final String connectionId;
+    private final Path storageRoot;
+    private final Map<String, Path> overriddenPluginsPathsByKey;
+    private final Map<String, Path> extraPluginsPathsByKey;
     private final boolean isSonarCloud;
-    private boolean isHotspotsEnabled;
+    private final boolean isHotspotsEnabled;
 
-    private Builder(boolean isSonarCloud) {
-      this.isSonarCloud = isSonarCloud;
+    private ConnectedGlobalConfiguration(Builder builder) {
+        super(builder);
+        this.connectionId = builder.connectionId;
+        this.storageRoot = builder.storageRoot != null
+            ? builder.storageRoot
+            : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
+        this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
+        this.extraPluginsPathsByKey = new HashMap<>(builder.extraPluginsPathsByKey);
+        this.isSonarCloud = builder.isSonarCloud;
+        this.isHotspotsEnabled = builder.isHotspotsEnabled;
     }
 
-    /**
-     * Unique identifier of the connection. Used for local storage. Only accept a-zA-Z0-9_ characters.
-     */
-    public Builder setConnectionId(String connectionId) {
-      validate(connectionId);
-      this.connectionId = connectionId;
-      return this;
+    public static Builder sonarQubeBuilder() {
+        return new Builder(false);
     }
 
-    private static void validate(@Nullable String connectionId) {
-      if (connectionId == null || connectionId.isEmpty()) {
-        throw new IllegalArgumentException("'" + connectionId + "' is not a valid connection ID");
-      }
+    public static Builder sonarCloudBuilder() {
+        return new Builder(true);
     }
 
-    /**
-     * Override default storage dir (~/.sonarlint/storage)
-     */
-    public Builder setStorageRoot(Path storageRoot) {
-      this.storageRoot = storageRoot;
-      return this;
+    public boolean isSonarCloud() {
+        return isSonarCloud;
     }
 
-    /**
-     * Register extra embedded plugin to be used in connected mode
-     */
-    public Builder addExtraPlugin(String pluginKey, Path pluginPath) {
-      extraPluginsPathsByKey.put(pluginKey, pluginPath);
-      return this;
+    public boolean isHotspotsEnabled() {
+        return isHotspotsEnabled;
     }
 
-    /**
-     * Ask the engine to prefer the given plugin JAR instead of downloading the one from the server
-     */
-    public Builder useEmbeddedPlugin(String pluginKey, Path pluginPath) {
-      overriddenPluginsPathsByKey.put(pluginKey, pluginPath);
-      return this;
+    public Path getStorageRoot() {
+        return storageRoot;
     }
 
-    public Builder enableHotspots() {
-      this.isHotspotsEnabled = true;
-      return this;
+    public String getConnectionId() {
+        return connectionId;
     }
 
-    public ConnectedGlobalConfiguration build() {
-      return new ConnectedGlobalConfiguration(this);
+    public Map<String, Path> getEmbeddedPluginPathsByKey() {
+        return overriddenPluginsPathsByKey;
     }
-  }
 
+    public Map<String, Path> getExtraPluginsPathsByKey() {
+        return extraPluginsPathsByKey;
+    }
+
+    public static final class Builder extends AbstractBuilder<Builder> {
+
+        private String connectionId;
+        private Path storageRoot;
+        private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
+        private final Map<String, Path> extraPluginsPathsByKey = new HashMap<>();
+        private final boolean isSonarCloud;
+        private boolean isHotspotsEnabled;
+
+        private Builder(boolean isSonarCloud) {
+            this.isSonarCloud = isSonarCloud;
+        }
+
+        /**
+         * Unique identifier of the connection. Used for local storage. Only accept a-zA-Z0-9_ characters.
+         */
+        public Builder setConnectionId(String connectionId) {
+            validate(connectionId);
+            this.connectionId = connectionId;
+            return this;
+        }
+
+        private static void validate(@Nullable String connectionId) {
+            if (connectionId == null || connectionId.isEmpty()) {
+                throw new IllegalArgumentException(
+                    "'" + connectionId + "' is not a valid connection ID"
+                );
+            }
+        }
+
+        /**
+         * Override default storage dir (~/.sonarlint/storage)
+         */
+        public Builder setStorageRoot(Path storageRoot) {
+            this.storageRoot = storageRoot;
+            return this;
+        }
+
+        /**
+         * Register extra embedded plugin to be used in connected mode
+         */
+        public Builder addExtraPlugin(String pluginKey, Path pluginPath) {
+            extraPluginsPathsByKey.put(pluginKey, pluginPath);
+            return this;
+        }
+
+        /**
+         * Ask the engine to prefer the given plugin JAR instead of downloading the one from the server
+         */
+        public Builder useEmbeddedPlugin(String pluginKey, Path pluginPath) {
+            overriddenPluginsPathsByKey.put(pluginKey, pluginPath);
+            return this;
+        }
+
+        public Builder enableHotspots() {
+            this.isHotspotsEnabled = true;
+            return this;
+        }
+
+        public ConnectedGlobalConfiguration build() {
+            return new ConnectedGlobalConfiguration(this);
+        }
+    }
 }

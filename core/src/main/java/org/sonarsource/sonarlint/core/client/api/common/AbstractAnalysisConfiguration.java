@@ -34,103 +34,104 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 @Immutable
 public abstract class AbstractAnalysisConfiguration {
 
-  private final List<ClientInputFile> inputFiles;
-  private final Map<String, String> extraProperties;
-  private final Path baseDir;
-  private final Object moduleKey;
+    private final List<ClientInputFile> inputFiles;
+    private final Map<String, String> extraProperties;
+    private final Path baseDir;
+    private final Object moduleKey;
 
-  protected AbstractAnalysisConfiguration(AbstractBuilder<?> builder) {
-    this.baseDir = builder.baseDir;
-    this.inputFiles = builder.inputFiles;
-    this.extraProperties = builder.extraProperties;
-    this.moduleKey = builder.moduleKey;
-  }
-
-  public Map<String, String> extraProperties() {
-    return extraProperties;
-  }
-
-  public Path baseDir() {
-    return baseDir;
-  }
-
-  @CheckForNull
-  public Object moduleKey() {
-    return moduleKey;
-  }
-
-  public List<ClientInputFile> inputFiles() {
-    return inputFiles;
-  }
-
-  protected void generateToStringCommon(StringBuilder sb) {
-    sb.append("  baseDir: ").append(baseDir()).append("\n");
-    sb.append("  extraProperties: ").append(extraProperties()).append("\n");
-    sb.append("  moduleKey: ").append(moduleKey()).append("\n");
-  }
-
-  protected void generateToStringInputFiles(StringBuilder sb) {
-    sb.append("  inputFiles: [\n");
-    for (ClientInputFile inputFile : inputFiles()) {
-      sb.append("    ").append(inputFile.uri());
-      sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
-      if (inputFile.isTest()) {
-        sb.append(" [test]");
-      }
-      var language = inputFile.language();
-      if (language != null) {
-        sb.append(" [" + language.getLanguageKey() + "]");
-      }
-      sb.append("\n");
-    }
-    sb.append("  ]\n");
-  }
-
-  private static String getCharsetLabel(ClientInputFile inputFile) {
-    var charset = inputFile.getCharset();
-    return charset != null ? charset.displayName() : "default";
-  }
-
-  public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
-    private final List<ClientInputFile> inputFiles = new ArrayList<>();
-    private final Map<String, String> extraProperties = new HashMap<>();
-    private Path baseDir;
-    private Object moduleKey;
-
-    public G addInputFiles(ClientInputFile... inputFiles) {
-      Collections.addAll(this.inputFiles, inputFiles);
-      return (G) this;
+    protected AbstractAnalysisConfiguration(AbstractBuilder<?> builder) {
+        this.baseDir = builder.baseDir;
+        this.inputFiles = builder.inputFiles;
+        this.extraProperties = builder.extraProperties;
+        this.moduleKey = builder.moduleKey;
     }
 
-    public G addInputFiles(Collection<? extends ClientInputFile> inputFiles) {
-      this.inputFiles.addAll(inputFiles);
-      return (G) this;
+    public Map<String, String> extraProperties() {
+        return extraProperties;
     }
 
-    public G addInputFile(ClientInputFile inputFile) {
-      this.inputFiles.add(inputFile);
-      return (G) this;
+    public Path baseDir() {
+        return baseDir;
     }
 
-    public G putAllExtraProperties(Map<String, String> extraProperties) {
-      this.extraProperties.putAll(extraProperties);
-      return (G) this;
+    @CheckForNull
+    public Object moduleKey() {
+        return moduleKey;
     }
 
-    public G putExtraProperty(String key, String value) {
-      this.extraProperties.put(key, value);
-      return (G) this;
+    public List<ClientInputFile> inputFiles() {
+        return inputFiles;
     }
 
-    public G setBaseDir(Path baseDir) {
-      this.baseDir = baseDir;
-      return (G) this;
+    protected void generateToStringCommon(StringBuilder sb) {
+        sb.append("  baseDir: ").append(baseDir()).append("\n");
+        sb.append("  extraProperties: ").append(extraProperties()).append("\n");
+        sb.append("  moduleKey: ").append(moduleKey()).append("\n");
     }
 
-    public G setModuleKey(@Nullable Object moduleKey) {
-      this.moduleKey = moduleKey;
-      return (G) this;
+    protected void generateToStringInputFiles(StringBuilder sb) {
+        sb.append("  inputFiles: [\n");
+        for (ClientInputFile inputFile : inputFiles()) {
+            sb.append("    ").append(inputFile.uri());
+            sb.append(" (").append(getCharsetLabel(inputFile)).append(")");
+            if (inputFile.isTest()) {
+                sb.append(" [test]");
+            }
+            var language = inputFile.language();
+            if (language != null) {
+                sb.append(" [" + language.getLanguageKey() + "]");
+            }
+            sb.append("\n");
+        }
+        sb.append("  ]\n");
     }
 
-  }
+    private static String getCharsetLabel(ClientInputFile inputFile) {
+        var charset = inputFile.getCharset();
+        return charset != null ? charset.displayName() : "default";
+    }
+
+    public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
+
+        private final List<ClientInputFile> inputFiles = new ArrayList<>();
+        private final Map<String, String> extraProperties = new HashMap<>();
+
+        private Path baseDir;
+        private Object moduleKey;
+
+        public G addInputFiles(ClientInputFile... inputFiles) {
+            Collections.addAll(this.inputFiles, inputFiles);
+            return (G) this;
+        }
+
+        public G addInputFiles(Collection<? extends ClientInputFile> inputFiles) {
+            this.inputFiles.addAll(inputFiles);
+            return (G) this;
+        }
+
+        public G addInputFile(ClientInputFile inputFile) {
+            this.inputFiles.add(inputFile);
+            return (G) this;
+        }
+
+        public G putAllExtraProperties(Map<String, String> extraProperties) {
+            this.extraProperties.putAll(extraProperties);
+            return (G) this;
+        }
+
+        public G putExtraProperty(String key, String value) {
+            this.extraProperties.put(key, value);
+            return (G) this;
+        }
+
+        public G setBaseDir(Path baseDir) {
+            this.baseDir = baseDir;
+            return (G) this;
+        }
+
+        public G setModuleKey(@Nullable Object moduleKey) {
+            this.moduleKey = moduleKey;
+            return (G) this;
+        }
+    }
 }

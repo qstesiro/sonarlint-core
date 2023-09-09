@@ -25,39 +25,39 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 public class PluginsMinVersions {
-  public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";
 
-  private final Properties minimalPluginVersions;
+    public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";
 
-  public PluginsMinVersions() {
-    this.minimalPluginVersions = new Properties();
-    try {
-      minimalPluginVersions.load(this.getClass().getResourceAsStream(MIN_VERSIONS_FILE));
-    } catch (IOException e) {
-      throw new IllegalStateException("Failed to load minimum plugin versions", e);
+    private final Properties minimalPluginVersions;
+
+    public PluginsMinVersions() {
+        this.minimalPluginVersions = new Properties();
+        try {
+            minimalPluginVersions.load(this.getClass().getResourceAsStream(MIN_VERSIONS_FILE));
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load minimum plugin versions", e);
+        }
     }
 
-  }
-
-  @CheckForNull
-  public String getMinimumVersion(String key) {
-    return minimalPluginVersions.getProperty(key);
-  }
-
-  public boolean isVersionSupported(String key, @Nullable String version) {
-    if (version != null) {
-      var v = Version.create(version);
-      return isVersionSupported(key, v);
+    @CheckForNull
+    public String getMinimumVersion(String key) {
+        return minimalPluginVersions.getProperty(key);
     }
-    return true;
-  }
 
-  public boolean isVersionSupported(String key, @Nullable Version version) {
-    var minVersion = getMinimumVersion(key);
-    if (version != null && minVersion != null) {
-      var minimalVersion = Version.create(minVersion);
-      return version.compareToIgnoreQualifier(minimalVersion) >= 0;
+    public boolean isVersionSupported(String key, @Nullable String version) {
+        if (version != null) {
+            var v = Version.create(version);
+            return isVersionSupported(key, v);
+        }
+        return true;
     }
-    return true;
-  }
+
+    public boolean isVersionSupported(String key, @Nullable Version version) {
+        var minVersion = getMinimumVersion(key);
+        if (version != null && minVersion != null) {
+            var minimalVersion = Version.create(minVersion);
+            return version.compareToIgnoreQualifier(minimalVersion) >= 0;
+        }
+        return true;
+    }
 }

@@ -38,37 +38,51 @@ import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentCo
 
 public class ModuleContainer extends SpringComponentContainer {
 
-  private final boolean isTransient;
+    private final boolean isTransient;
 
-  public ModuleContainer(SpringComponentContainer parent, boolean isTransient) {
-    super(parent);
-    this.isTransient = isTransient;
-  }
+    public ModuleContainer(SpringComponentContainer parent, boolean isTransient) {
+        super(parent);
+        this.isTransient = isTransient;
+    }
 
-  @Override
-  protected void doBeforeStart() {
-    add(
-      SonarLintModuleFileSystem.class,
-      ModuleInputFileBuilder.class,
-      FileMetadata.class,
-      LanguageDetection.class,
+    @Override
+    protected void doBeforeStart() {
+        add(
+            SonarLintModuleFileSystem.class,
+            ModuleInputFileBuilder.class,
+            FileMetadata.class,
+            LanguageDetection.class,
+            ModuleFileEventNotifier.class
+        );
+        getParent()
+            .getComponentByType(AnalysisExtensionInstaller.class)
+            .install(this, ContainerLifespan.MODULE); // 注册所有MODULE扩展点
+    }
 
-      ModuleFileEventNotifier.class);
-    getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
-  }
+    public boolean isTransient() {
+        return isTransient;
+    }
 
-  public boolean isTransient() {
-    return isTransient;
-  }
-
-  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {
-    var analysisContainer = new AnalysisContainer(this, progress);
-    analysisContainer.add(configuration);
-    analysisContainer.add(new IssueListenerHolder(issueListener));
-    analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).collect(Collectors.toList())));
-    var defaultAnalysisResult = new AnalysisResults();
-    analysisContainer.add(defaultAnalysisResult);
-    analysisContainer.execute();
-    return defaultAnalysisResult;
-  }
+    public AnalysisResults analyze(
+        AnalysisConfiguration configuration,
+        Consumer<Issue> issueListener,
+        ProgressMonitor progress
+    ) {
+        var analysisContainer = new AnalysisContainer(this, progress);
+        analysisContainer.add(configuration);
+        analysisContainer.add(new IssueListenerHolder(issueListener));
+        analysisContainer.add( // 增加ActiveRules实例
+            new ActiveRulesAdapter(
+                configuration
+                    .activeRules()
+                    .stream()
+                    .map(ActiveRuleAdapter::new)
+                    .collect(Collectors.toList())
+            )
+        );
+        var defaultAnalysisResult = new AnalysisResults();
+        analysisContainer.add(defaultAnalysisResult);
+        analysisContainer.execute(); // 注册所有ANALYSIS(SINGLE_ANALYSIS)扩展点
+        return defaultAnalysisResult;
+    }
 }

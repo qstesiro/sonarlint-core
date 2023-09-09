@@ -29,181 +29,203 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 public interface SkipReason {
 
-  class IncompatiblePluginApi implements SkipReason {
+    class IncompatiblePluginApi implements SkipReason {
 
-    public static final IncompatiblePluginApi INSTANCE = new IncompatiblePluginApi();
+        public static final IncompatiblePluginApi INSTANCE = new IncompatiblePluginApi();
 
-    private IncompatiblePluginApi() {
-      // Singleton
+        private IncompatiblePluginApi() {
+            // Singleton
+        }
     }
 
-  }
+    class None implements SkipReason {
 
-  class LanguagesNotEnabled implements SkipReason {
-    private final Set<Language> languages;
-
-    public LanguagesNotEnabled(Collection<Language> languages) {
-      this.languages = new LinkedHashSet<>(languages);
+        @Override
+        public String toString() {
+            return "none";
+        }
     }
 
-    public Set<Language> getNotEnabledLanguages() {
-      return languages;
+    class LanguagesNotEnabled implements SkipReason {
+
+        private final Set<Language> languages;
+
+        public LanguagesNotEnabled(Collection<Language> languages) {
+            this.languages = new LinkedHashSet<>(languages);
+        }
+
+        public Set<Language> getNotEnabledLanguages() {
+            return languages;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(languages);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof LanguagesNotEnabled)) {
+                return false;
+            }
+            var other = (LanguagesNotEnabled) obj;
+            return Objects.equals(languages, other.languages);
+        }
+
+        @Override
+        public String toString() {
+            var builder = new StringBuilder();
+            builder.append("LanguagesNotEnabled [languages=").append(languages).append("]");
+            return builder.toString();
+        }
+
     }
 
-    @Override
-    public int hashCode() {
-      return Objects.hash(languages);
+    class UnsatisfiedDependency implements SkipReason {
+
+        private final String dependencyKey;
+
+        public UnsatisfiedDependency(String dependencyKey) {
+            this.dependencyKey = dependencyKey;
+        }
+
+        public String getDependencyKey() {
+            return dependencyKey;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(dependencyKey);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof UnsatisfiedDependency)) {
+                return false;
+            }
+            var other = (UnsatisfiedDependency) obj;
+            return Objects.equals(dependencyKey, other.dependencyKey);
+        }
+
+        @Override
+        public String toString() {
+            var builder = new StringBuilder();
+            builder.append("UnsatisfiedDependency [dependencyKey=").append(dependencyKey).append("]");
+            return builder.toString();
+        }
+
     }
 
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof LanguagesNotEnabled)) {
-        return false;
-      }
-      var other = (LanguagesNotEnabled) obj;
-      return Objects.equals(languages, other.languages);
+    class IncompatiblePluginVersion implements SkipReason {
+
+        private final String minVersion;
+
+        public IncompatiblePluginVersion(String minVersion) {
+            this.minVersion = minVersion;
+        }
+
+        public String getMinVersion() {
+            return minVersion;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(minVersion);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof IncompatiblePluginVersion)) {
+                return false;
+            }
+            var other = (IncompatiblePluginVersion) obj;
+            return Objects.equals(minVersion, other.minVersion);
+        }
+
+        @Override
+        public String toString() {
+            var builder = new StringBuilder();
+            builder.append("IncompatiblePluginVersion [minVersion=").append(minVersion).append("]");
+            return builder.toString();
+        }
+
     }
 
-    @Override
-    public String toString() {
-      var builder = new StringBuilder();
-      builder.append("LanguagesNotEnabled [languages=").append(languages).append("]");
-      return builder.toString();
+    class UnsatisfiedRuntimeRequirement implements SkipReason {
+
+        public enum RuntimeRequirement {
+            JRE,
+            NODEJS
+        }
+
+        private final RuntimeRequirement runtime;
+        private final String currentVersion;
+        private final String minVersion;
+
+        public UnsatisfiedRuntimeRequirement(
+            RuntimeRequirement runtime,
+            @Nullable String currentVersion,
+            String minVersion
+        ) {
+            this.runtime = runtime;
+            this.currentVersion = currentVersion;
+            this.minVersion = minVersion;
+        }
+
+        public RuntimeRequirement getRuntime() {
+            return runtime;
+        }
+
+        @CheckForNull
+        public String getCurrentVersion() {
+            return currentVersion;
+        }
+
+        public String getMinVersion() {
+            return minVersion;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(runtime, currentVersion, minVersion);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof UnsatisfiedRuntimeRequirement)) {
+                return false;
+            }
+            var other = (UnsatisfiedRuntimeRequirement) obj;
+            return runtime == other.runtime
+                && Objects.equals(currentVersion, other.currentVersion)
+                && Objects.equals(minVersion, other.minVersion);
+        }
+
+        @Override
+        public String toString() {
+            var builder = new StringBuilder();
+            builder.append("UnsatisfiedRuntimeRequirement [runtime=")
+                .append(runtime)
+                .append(", currentVersion=")
+                .append(currentVersion)
+                .append(", minVersion=")
+                .append(minVersion)
+                .append("]");
+            return builder.toString();
+        }
+
     }
-
-  }
-
-  class UnsatisfiedDependency implements SkipReason {
-    private final String dependencyKey;
-
-    public UnsatisfiedDependency(String dependencyKey) {
-      this.dependencyKey = dependencyKey;
-    }
-
-    public String getDependencyKey() {
-      return dependencyKey;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(dependencyKey);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof UnsatisfiedDependency)) {
-        return false;
-      }
-      var other = (UnsatisfiedDependency) obj;
-      return Objects.equals(dependencyKey, other.dependencyKey);
-    }
-
-    @Override
-    public String toString() {
-      var builder = new StringBuilder();
-      builder.append("UnsatisfiedDependency [dependencyKey=").append(dependencyKey).append("]");
-      return builder.toString();
-    }
-
-  }
-
-  class IncompatiblePluginVersion implements SkipReason {
-    private final String minVersion;
-
-    public IncompatiblePluginVersion(String minVersion) {
-      this.minVersion = minVersion;
-    }
-
-    public String getMinVersion() {
-      return minVersion;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(minVersion);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof IncompatiblePluginVersion)) {
-        return false;
-      }
-      var other = (IncompatiblePluginVersion) obj;
-      return Objects.equals(minVersion, other.minVersion);
-    }
-
-    @Override
-    public String toString() {
-      var builder = new StringBuilder();
-      builder.append("IncompatiblePluginVersion [minVersion=").append(minVersion).append("]");
-      return builder.toString();
-    }
-
-  }
-
-  class UnsatisfiedRuntimeRequirement implements SkipReason {
-    public enum RuntimeRequirement {
-      JRE,
-      NODEJS
-    }
-
-    private final RuntimeRequirement runtime;
-    private final String currentVersion;
-    private final String minVersion;
-
-    public UnsatisfiedRuntimeRequirement(RuntimeRequirement runtime, @Nullable String currentVersion, String minVersion) {
-      this.runtime = runtime;
-      this.currentVersion = currentVersion;
-      this.minVersion = minVersion;
-    }
-
-    public RuntimeRequirement getRuntime() {
-      return runtime;
-    }
-
-    @CheckForNull
-    public String getCurrentVersion() {
-      return currentVersion;
-    }
-
-    public String getMinVersion() {
-      return minVersion;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(runtime, currentVersion, minVersion);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof UnsatisfiedRuntimeRequirement)) {
-        return false;
-      }
-      var other = (UnsatisfiedRuntimeRequirement) obj;
-      return runtime == other.runtime && Objects.equals(currentVersion, other.currentVersion) && Objects.equals(minVersion, other.minVersion);
-    }
-
-    @Override
-    public String toString() {
-      var builder = new StringBuilder();
-      builder.append("UnsatisfiedRuntimeRequirement [runtime=").append(runtime).append(", currentVersion=").append(currentVersion).append(", minVersion=").append(minVersion)
-        .append("]");
-      return builder.toString();
-    }
-
-  }
 
 }

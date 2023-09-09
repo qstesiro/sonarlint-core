@@ -21,54 +21,84 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+
 public class ActiveRule {
 
-  private final String ruleKey;
-  private final String languageKey;
-  private Map<String, String> params = Collections.emptyMap();
-  private String templateRuleKey = null;
+    private final String ruleKey;
+    private final String languageKey;
+    private final Optional<String> internalKey;
+    private final IssueSeverity severity;
+    private Map<String, String> params = Collections.emptyMap();
+    private String templateRuleKey = null;
 
-  public ActiveRule(String ruleKey, String languageKey) {
-    this.ruleKey = ruleKey;
-    this.languageKey = languageKey;
-  }
-
-  public String getRuleKey() {
-    return ruleKey;
-  }
-
-  public String getLanguageKey() {
-    return languageKey;
-  }
-
-  public Map<String, String> getParams() {
-    return params;
-  }
-
-  public void setParams(Map<String, String> params) {
-    this.params = Map.copyOf(params);
-  }
-
-  @CheckForNull
-  public String getTemplateRuleKey() {
-    return templateRuleKey;
-  }
-
-  public void setTemplateRuleKey(@Nullable String templateRuleKey) {
-    this.templateRuleKey = templateRuleKey;
-  }
-
-  @Override
-  public String toString() {
-    var sb = new StringBuilder();
-    sb.append(ruleKey);
-    if (!params.isEmpty()) {
-      sb.append(params);
+    public ActiveRule(String ruleKey, String languageKey) {
+        this(
+            ruleKey,
+            languageKey,
+            Optional.ofNullable(null),
+            IssueSeverity.INFO
+        );
     }
-    return sb.toString();
-  }
+
+    public ActiveRule(
+        String ruleKey,
+        String languageKey,
+        // 新增两个参数
+        Optional<String> internalKey,
+        IssueSeverity severity
+    ) {
+        this.ruleKey = ruleKey;
+        this.languageKey = languageKey;
+        this.internalKey = internalKey;
+        this.severity = severity;
+    }
+
+    public String getRuleKey() {
+        return ruleKey;
+    }
+
+    public String getLanguageKey() {
+        return languageKey;
+    }
+
+    public String getInternalKey() {
+        return internalKey.orElse("");
+    }
+
+    public String getSeverity() {
+        return severity.name();
+    }
+
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public void setParams(Map<String, String> params) {
+        this.params = Map.copyOf(params);
+    }
+
+    @CheckForNull
+    public String getTemplateRuleKey() {
+        return templateRuleKey;
+    }
+
+    public void setTemplateRuleKey(@Nullable String templateRuleKey) {
+        this.templateRuleKey = templateRuleKey;
+    }
+
+    @Override
+    public String toString() {
+        var sb = new StringBuilder();
+        sb.append(ruleKey);
+        if (!params.isEmpty()) {
+            sb.append(params);
+        }
+        return sb.toString();
+    }
 
 }

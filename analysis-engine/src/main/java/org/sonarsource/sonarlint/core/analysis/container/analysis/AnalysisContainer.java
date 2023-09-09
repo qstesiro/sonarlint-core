@@ -22,6 +22,9 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis;
 import org.sonar.api.batch.rule.CheckFactory;
 import org.sonar.api.resources.Languages;
 import org.sonar.api.scan.filesystem.PathResolver;
+import org.sonar.api.batch.fs.FileSystem;
+import org.sonar.api.batch.rule.ActiveRules;
+import org.sonar.api.rules.RuleFinder;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
@@ -49,77 +52,74 @@ import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentCo
 
 public class AnalysisContainer extends SpringComponentContainer {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ProgressMonitor progress;
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private final ProgressMonitor progress;
 
-  public AnalysisContainer(SpringComponentContainer globalContainer, ProgressMonitor progress) {
-    super(globalContainer);
-    this.progress = progress;
-  }
+    public AnalysisContainer(SpringComponentContainer globalContainer, ProgressMonitor progress) {
+        super(globalContainer);
+        this.progress = progress;
+    }
 
-  @Override
-  protected void doBeforeStart() {
-    addCoreComponents();
-    addPluginExtensions();
-  }
+    @Override
+    protected void doBeforeStart() {
+        addCoreComponents();
+        addPluginExtensions();
+    }
 
-  private void addCoreComponents() {
-    add(
-      progress,
-      SonarLintInputProject.class,
-      NoOpFileLinesContextFactory.class,
+    private void addCoreComponents() {
+        add(
+            progress,
+            SonarLintInputProject.class,
+            NoOpFileLinesContextFactory.class,
+            // temp
+            new AnalysisTempFolderProvider(),
+            // file system
+            PathResolver.class,
+            // lang
+            Languages.class,
+            AnalysisSettings.class,
+            new AnalysisConfigurationProvider(),
+            // file system
+            InputFileIndex.class,
+            InputFileBuilder.class,
+            FileMetadata.class,
+            LanguageDetection.class,
+            FileIndexer.class,
+            SonarLintFileSystem.class,
+            // Exclusions using SonarQube properties
+            EnforceIssuesFilter.class,
+            IgnoreIssuesFilter.class,
+            IssueExclusionPatternInitializer.class,
+            IssueInclusionPatternInitializer.class,
+            IssueExclusionsLoader.class,
+            //
+            SensorOptimizer.class,
+            SensorsExecutor.class,
+            //
+            DefaultSensorContext.class,
+            SonarLintSensorStorage.class,
+            IssueFilters.class,
+            // rules
+            CheckFactory.class,
+            // issues
+            SonarLintNoSonarFilter.class,
+            //
+            RuleFinder.class
+        );
+    }
 
-      // temp
-      new AnalysisTempFolderProvider(),
+    private void addPluginExtensions() {
+        getParent()
+            .getComponentByType(AnalysisExtensionInstaller.class)
+            .install(this, ContainerLifespan.ANALYSIS); // 注册所有ANALYSIS(SINGLE_ANALYSIS)扩展点
+    }
 
-      // file system
-      PathResolver.class,
-
-      // lang
-      Languages.class,
-
-      AnalysisSettings.class,
-      new AnalysisConfigurationProvider(),
-
-      // file system
-      InputFileIndex.class,
-      InputFileBuilder.class,
-      FileMetadata.class,
-      LanguageDetection.class,
-      FileIndexer.class,
-      SonarLintFileSystem.class,
-
-      // Exclusions using SonarQube properties
-      EnforceIssuesFilter.class,
-      IgnoreIssuesFilter.class,
-      IssueExclusionPatternInitializer.class,
-      IssueInclusionPatternInitializer.class,
-      IssueExclusionsLoader.class,
-
-      SensorOptimizer.class,
-      SensorsExecutor.class,
-
-      DefaultSensorContext.class,
-      SonarLintSensorStorage.class,
-      IssueFilters.class,
-
-      // rules
-      CheckFactory.class,
-
-      // issues
-      SonarLintNoSonarFilter.class);
-  }
-
-  private void addPluginExtensions() {
-    getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
-  }
-
-  @Override
-  protected void doAfterStart() {
-    LOG.debug("Start analysis");
-    // Don't initialize Sensors before the FS is indexed
-    getComponentByType(FileIndexer.class).index();
-    getComponentByType(SensorsExecutor.class).execute();
-  }
+    @Override
+    protected void doAfterStart() {
+        LOG.debug("Start analysis");
+        // Don't initialize Sensors before the FS is indexed
+        getComponentByType(FileIndexer.class).index();
+        getComponentByType(SensorsExecutor.class).execute();
+    }
 
 }

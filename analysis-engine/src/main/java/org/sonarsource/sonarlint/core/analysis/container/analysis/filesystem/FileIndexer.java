@@ -41,95 +41,107 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 @SonarLintSide
 public class FileIndexer {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final InputFileBuilder inputFileBuilder;
-  private final AnalysisConfiguration analysisConfiguration;
-  private final AnalysisResults analysisResult;
-  private final List<InputFileFilter> filters;
-  private final IssueExclusionsLoader issueExclusionsLoader;
-  private final InputFileIndex inputFileCache;
+    private final InputFileBuilder inputFileBuilder;
+    private final AnalysisConfiguration analysisConfiguration;
+    private final AnalysisResults analysisResult;
+    private final List<InputFileFilter> filters;
+    private final IssueExclusionsLoader issueExclusionsLoader;
+    private final InputFileIndex inputFileCache;
 
-  private ProgressReport progressReport;
+    private ProgressReport progressReport;
 
-  public FileIndexer(InputFileIndex inputFileCache, InputFileBuilder inputFileBuilder, AnalysisConfiguration analysisConfiguration,
-    AnalysisResults analysisResult, IssueExclusionsLoader issueExclusionsLoader,
-    Optional<List<InputFileFilter>> filters) {
-    this.inputFileCache = inputFileCache;
-    this.inputFileBuilder = inputFileBuilder;
-    this.analysisConfiguration = analysisConfiguration;
-    this.analysisResult = analysisResult;
-    this.issueExclusionsLoader = issueExclusionsLoader;
-    this.filters = filters.orElse(List.of());
-  }
-
-  public void index() {
-    progressReport = new ProgressReport("Report about progress of file indexation", TimeUnit.SECONDS.toMillis(10));
-    progressReport.start("Index files");
-
-    var progress = new Progress();
-
-    try {
-      indexFiles(inputFileCache, progress, analysisConfiguration.inputFiles());
-    } catch (Exception e) {
-      progressReport.stop(null);
-      throw e;
-    }
-    var totalIndexed = progress.count();
-    progressReport.stop(totalIndexed + " " + pluralizeFiles(totalIndexed) + " indexed");
-    analysisResult.setIndexedFileCount(totalIndexed);
-  }
-
-  private static String pluralizeFiles(int count) {
-    return count == 1 ? "file" : "files";
-  }
-
-  private void indexFiles(InputFileIndex inputFileCache, Progress progress, Iterable<ClientInputFile> inputFiles) {
-    for (ClientInputFile file : inputFiles) {
-      indexFile(inputFileCache, progress, file);
-    }
-  }
-
-  private void indexFile(InputFileIndex inputFileCache, Progress progress, ClientInputFile file) {
-    var inputFile = inputFileBuilder.create(file);
-    if (accept(inputFile)) {
-      analysisResult.setLanguageForFile(file, inputFile.getLanguage());
-      indexFile(inputFileCache, progress, inputFile);
-      issueExclusionsLoader.addMulticriteriaPatterns(inputFile);
-    }
-  }
-
-  private void indexFile(final InputFileIndex inputFileCache, final Progress status, final SonarLintInputFile inputFile) {
-    inputFileCache.doAdd(inputFile);
-    status.markAsIndexed(inputFile);
-  }
-
-  private boolean accept(InputFile indexedFile) {
-    // InputFileFilter extensions. Might trigger generation of metadata
-    for (InputFileFilter filter : filters) {
-      if (!filter.accept(indexedFile)) {
-        LOG.debug("'{}' excluded by {}", indexedFile, filter.getClass().getName());
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private class Progress {
-    private final Set<URI> indexed = new HashSet<>();
-
-    void markAsIndexed(SonarLintInputFile inputFile) {
-      if (indexed.contains(inputFile.uri())) {
-        throw MessageException.of("File " + inputFile + " can't be indexed twice.");
-      }
-      indexed.add(inputFile.uri());
-      var size = indexed.size();
-      progressReport.message(() -> size + " files indexed...  (last one was " + inputFile.uri() + ")");
+    public FileIndexer(
+        InputFileIndex inputFileCache,
+        InputFileBuilder inputFileBuilder,
+        AnalysisConfiguration analysisConfiguration,
+        AnalysisResults analysisResult,
+        IssueExclusionsLoader issueExclusionsLoader,
+        Optional<List<InputFileFilter>> filters
+    ) {
+        this.inputFileCache = inputFileCache;
+        this.inputFileBuilder = inputFileBuilder;
+        this.analysisConfiguration = analysisConfiguration;
+        this.analysisResult = analysisResult;
+        this.issueExclusionsLoader = issueExclusionsLoader;
+        this.filters = filters.orElse(List.of());
     }
 
-    int count() {
-      return indexed.size();
+    public void index() {
+        progressReport = new ProgressReport(
+            "Report about progress of file indexation",
+            TimeUnit.SECONDS.toMillis(10)
+        );
+        progressReport.start("Index files");
+        var progress = new Progress();
+        try {
+            indexFiles(inputFileCache, progress, analysisConfiguration.inputFiles());
+        } catch (Exception e) {
+            progressReport.stop(null);
+            throw e;
+        }
+        var totalIndexed = progress.count();
+        progressReport.stop(totalIndexed + " " + pluralizeFiles(totalIndexed) + " indexed");
+        analysisResult.setIndexedFileCount(totalIndexed);
     }
-  }
+
+    private static String pluralizeFiles(int count) {
+        return count == 1 ? "file" : "files";
+    }
+
+    private void indexFiles(
+        InputFileIndex inputFileCache,
+        Progress progress,
+        Iterable<ClientInputFile> inputFiles
+    ) {
+        for (ClientInputFile file : inputFiles) {
+            indexFile(inputFileCache, progress, file);
+        }
+    }
+
+    private void indexFile(InputFileIndex inputFileCache, Progress progress, ClientInputFile file) {
+        var inputFile = inputFileBuilder.create(file);
+        if (accept(inputFile)) {
+            analysisResult.setLanguageForFile(file, inputFile.getLanguage());
+            indexFile(inputFileCache, progress, inputFile);
+            issueExclusionsLoader.addMulticriteriaPatterns(inputFile);
+        }
+    }
+
+    private void indexFile(
+        final InputFileIndex inputFileCache,
+        final Progress status,
+        final SonarLintInputFile inputFile
+    ) {
+        inputFileCache.doAdd(inputFile);
+        status.markAsIndexed(inputFile);
+    }
+
+    private boolean accept(InputFile indexedFile) {
+        // InputFileFilter extensions. Might trigger generation of metadata
+        for (InputFileFilter filter : filters) {
+            if (!filter.accept(indexedFile)) {
+                LOG.debug("'{}' excluded by {}", indexedFile, filter.getClass().getName());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private class Progress {
+        private final Set<URI> indexed = new HashSet<>();
+        void markAsIndexed(SonarLintInputFile inputFile) {
+            if (indexed.contains(inputFile.uri())) {
+                throw MessageException.of("File " + inputFile + " can't be indexed twice.");
+            }
+            indexed.add(inputFile.uri());
+            var size = indexed.size();
+            progressReport.message(() -> size + " files indexed...  (last one was " + inputFile.uri() + ")");
+        }
+        int count() {
+            return indexed.size();
+        }
+    }
 
 }

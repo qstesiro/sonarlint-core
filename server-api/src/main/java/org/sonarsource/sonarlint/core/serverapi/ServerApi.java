@@ -35,65 +35,66 @@ import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerApi {
-  private final ServerApiHelper helper;
 
-  public ServerApi(EndpointParams endpoint, HttpClient client) {
-    this(new ServerApiHelper(endpoint, client));
-  }
+    private final ServerApiHelper helper;
 
-  public ServerApi(ServerApiHelper helper) {
-    this.helper = helper;
-  }
+    public ServerApi(EndpointParams endpoint, HttpClient client) {
+        this(new ServerApiHelper(endpoint, client));
+    }
 
-  public ComponentApi component() {
-    return new ComponentApi(helper);
-  }
+    public ServerApi(ServerApiHelper helper) {
+        this.helper = helper;
+    }
 
-  public DevelopersApi developers() {
-    return new DevelopersApi(helper);
-  }
+    public ComponentApi component() {
+        return new ComponentApi(helper);
+    }
 
-  public HotspotApi hotspot() {
-    return new HotspotApi(helper);
-  }
+    public DevelopersApi developers() {
+        return new DevelopersApi(helper);
+    }
 
-  public OrganizationApi organization() {
-    return new OrganizationApi(helper);
-  }
+    public HotspotApi hotspot() {
+        return new HotspotApi(helper);
+    }
 
-  public IssueApi issue() {
-    return new IssueApi(helper);
-  }
+    public OrganizationApi organization() {
+        return new OrganizationApi(helper);
+    }
 
-  public SourceApi source() {
-    return new SourceApi(helper);
-  }
+    public IssueApi issue() {
+        return new IssueApi(helper);
+    }
 
-  public SettingsApi settings() {
-    return new SettingsApi(helper);
-  }
+    public SourceApi source() {
+        return new SourceApi(helper);
+    }
 
-  public QualityProfileApi qualityProfile() {
-    return new QualityProfileApi(helper);
-  }
+    public SettingsApi settings() {
+        return new SettingsApi(helper);
+    }
 
-  public PluginsApi plugins() {
-    return new PluginsApi(helper);
-  }
+    public QualityProfileApi qualityProfile() {
+        return new QualityProfileApi(helper);
+    }
 
-  public RulesApi rules() {
-    return new RulesApi(helper);
-  }
+    public PluginsApi plugins() {
+        return new PluginsApi(helper);
+    }
 
-  public SystemApi system() {
-    return new SystemApi(helper);
-  }
+    public RulesApi rules() {
+        return new RulesApi(helper);
+    }
 
-  public ProjectBranchesApi branches() {
-    return new ProjectBranchesApi(helper);
-  }
+    public SystemApi system() {
+        return new SystemApi(helper);
+    }
 
-  public PushApi push() {
-    return new PushApi(helper);
-  }
+    public ProjectBranchesApi branches() {
+        return new ProjectBranchesApi(helper);
+    }
+
+    public PushApi push() {
+        return new PushApi(helper);
+    }
 }

@@ -38,123 +38,148 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectSto
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.writeToFile;
 
 public class ProjectStorage {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final Path projectsRootPath;
-  private final RWLock rwLock = new RWLock();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public ProjectStorage(Path projectsRootPath) {
-    this.projectsRootPath = projectsRootPath;
-  }
+    private final Path projectsRootPath;
+    private final RWLock rwLock = new RWLock();
 
-  public void store(String projectKey, AnalyzerConfiguration analyzerConfiguration) {
-    var pbFilePath = getAnalyzerConfigFilePath(projectKey);
-    FileUtils.mkdirs(pbFilePath.getParent());
-    var data = adapt(analyzerConfiguration);
-    LOG.debug("Storing project analyzer configuration in {}", pbFilePath);
-    rwLock.write(() -> writeToFile(data, pbFilePath));
-  }
+    public ProjectStorage(Path projectsRootPath) {
+        this.projectsRootPath = projectsRootPath;
+    }
 
-  public AnalyzerConfiguration getAnalyzerConfiguration(String projectKey) {
-    var projectFilePath = getAnalyzerConfigFilePath(projectKey);
-    return adapt(rwLock.read(() -> readConfiguration(projectFilePath)));
-  }
+    public void store(String projectKey, AnalyzerConfiguration analyzerConfiguration) {
+        var pbFilePath = getAnalyzerConfigFilePath(projectKey);
+        FileUtils.mkdirs(pbFilePath.getParent());
+        var data = adapt(analyzerConfiguration);
+        LOG.debug("Storing project analyzer configuration in {}", pbFilePath);
+        rwLock.write(() -> writeToFile(data, pbFilePath));
+    }
 
-  public void store(String projectKey, ProjectBranches projectBranches) {
-    var pbFilePath = getProjectBranchesFilePath(projectKey);
-    FileUtils.mkdirs(pbFilePath.getParent());
-    var data = adapt(projectBranches);
-    LOG.debug("Storing project branches in {}", pbFilePath);
-    rwLock.write(() -> writeToFile(data, pbFilePath));
-  }
+    public AnalyzerConfiguration getAnalyzerConfiguration(String projectKey) {
+        var projectFilePath = getAnalyzerConfigFilePath(projectKey);
+        return adapt(rwLock.read(() -> readConfiguration(projectFilePath)));
+    }
 
-  public ProjectBranches getProjectBranches(String projectKey) {
-    var pbFilePath = getProjectBranchesFilePath(projectKey);
-    return adapt(rwLock.read(() -> ProtobufUtil.readFile(pbFilePath, Sonarlint.ProjectBranches.parser())));
-  }
+    public void store(String projectKey, ProjectBranches projectBranches) {
+        var pbFilePath = getProjectBranchesFilePath(projectKey);
+        FileUtils.mkdirs(pbFilePath.getParent());
+        var data = adapt(projectBranches);
+        LOG.debug("Storing project branches in {}", pbFilePath);
+        rwLock.write(() -> writeToFile(data, pbFilePath));
+    }
 
-  private static ProjectBranches adapt(Sonarlint.ProjectBranches projectBranches) {
-    return new ProjectBranches(Set.copyOf(projectBranches.getBranchNameList()), projectBranches.getMainBranchName());
-  }
+    public ProjectBranches getProjectBranches(String projectKey) {
+        var pbFilePath = getProjectBranchesFilePath(projectKey);
+        return adapt(rwLock.read(() -> ProtobufUtil.readFile(pbFilePath, Sonarlint.ProjectBranches.parser())));
+    }
 
-  private static Sonarlint.ProjectBranches adapt(ProjectBranches projectBranches) {
-    return Sonarlint.ProjectBranches.newBuilder()
-      .addAllBranchName(projectBranches.getBranchNames())
-      .setMainBranchName(projectBranches.getMainBranchName())
-      .build();
-  }
+    private static ProjectBranches adapt(Sonarlint.ProjectBranches projectBranches) {
+        return new ProjectBranches(
+            Set.copyOf(projectBranches.getBranchNameList()),
+            projectBranches.getMainBranchName()
+        );
+    }
 
-  public void update(String projectKey, UnaryOperator<AnalyzerConfiguration> updater) {
-    var projectFilePath = getAnalyzerConfigFilePath(projectKey);
-    FileUtils.mkdirs(projectFilePath.getParent());
-    rwLock.write(() -> {
-      Sonarlint.AnalyzerConfiguration config;
-      try {
-        config = readConfiguration(projectFilePath);
-      } catch (StorageException e) {
-        LOG.warn("Unable to read storage. Creating a new one.", e);
-        config = Sonarlint.AnalyzerConfiguration.newBuilder().build();
-      }
-      writeToFile(adapt(updater.apply(adapt(config))), projectFilePath);
-      LOG.debug("Storing project data in {}", projectFilePath);
-    });
-  }
+    private static Sonarlint.ProjectBranches adapt(ProjectBranches projectBranches) {
+        return Sonarlint.ProjectBranches.newBuilder()
+            .addAllBranchName(projectBranches.getBranchNames())
+            .setMainBranchName(projectBranches.getMainBranchName())
+            .build();
+    }
 
-  private static Sonarlint.AnalyzerConfiguration readConfiguration(Path projectFilePath) {
-    return ProtobufUtil.readFile(projectFilePath, Sonarlint.AnalyzerConfiguration.parser());
-  }
+    public void update(String projectKey, UnaryOperator<AnalyzerConfiguration> updater) {
+        var projectFilePath = getAnalyzerConfigFilePath(projectKey);
+        FileUtils.mkdirs(projectFilePath.getParent());
+        rwLock.write(
+            () -> {
+                Sonarlint.AnalyzerConfiguration config;
+                try {
+                    config = readConfiguration(projectFilePath);
+                } catch (StorageException e) {
+                    LOG.warn("Unable to read storage. Creating a new one.", e);
+                    config = Sonarlint.AnalyzerConfiguration.newBuilder().build();
+                }
+                writeToFile(adapt(updater.apply(adapt(config))), projectFilePath);
+                LOG.debug("Storing project data in {}", projectFilePath);
+            }
+        );
+    }
 
-  private static AnalyzerConfiguration adapt(Sonarlint.AnalyzerConfiguration analyzerConfiguration) {
-    return new AnalyzerConfiguration(
-      new Settings(analyzerConfiguration.getSettingsMap()),
-      analyzerConfiguration.getRuleSetsByLanguageKeyMap().entrySet().stream().collect(Collectors.toMap(
-        Map.Entry::getKey,
-        e -> adapt(e.getValue()))));
-  }
+    private static Sonarlint.AnalyzerConfiguration readConfiguration(Path projectFilePath) {
+        return ProtobufUtil.readFile(projectFilePath, Sonarlint.AnalyzerConfiguration.parser());
+    }
 
-  private static RuleSet adapt(Sonarlint.RuleSet ruleSet) {
-    return new RuleSet(
-      ruleSet.getRulesList().stream().map(ProjectStorage::adapt).collect(Collectors.toList()),
-      ruleSet.getLastModified());
-  }
+    private static AnalyzerConfiguration adapt(Sonarlint.AnalyzerConfiguration analyzerConfiguration) {
+        return new AnalyzerConfiguration(
+            new Settings(analyzerConfiguration.getSettingsMap()),
+            analyzerConfiguration
+            .getRuleSetsByLanguageKeyMap()
+            .entrySet()
+            .stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> adapt(e.getValue())
+                )
+            )
+        );
+    }
 
-  private static ServerActiveRule adapt(Sonarlint.RuleSet.ActiveRule rule) {
-    return new ServerActiveRule(
-      rule.getRuleKey(),
-      IssueSeverity.valueOf(rule.getSeverity()),
-      rule.getParamsMap(),
-      rule.getTemplateKey());
-  }
+    private static RuleSet adapt(Sonarlint.RuleSet ruleSet) {
+        return new RuleSet(
+            ruleSet.getRulesList().stream().map(ProjectStorage::adapt).collect(Collectors.toList()),
+            ruleSet.getLastModified());
+    }
 
-  private static Sonarlint.AnalyzerConfiguration adapt(AnalyzerConfiguration analyzerConfiguration) {
-    return Sonarlint.AnalyzerConfiguration.newBuilder()
-      .putAllSettings(analyzerConfiguration.getSettings().getAll())
-      .putAllRuleSetsByLanguageKey(analyzerConfiguration.getRuleSetByLanguageKey().entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> adapt(e.getValue()))))
-      .build();
-  }
+    private static ServerActiveRule adapt(Sonarlint.RuleSet.ActiveRule rule) {
+        return new ServerActiveRule(
+            rule.getRuleKey(),
+            IssueSeverity.valueOf(rule.getSeverity()),
+            rule.getParamsMap(),
+            rule.getTemplateKey());
+    }
 
-  private static Sonarlint.RuleSet adapt(RuleSet ruleSet) {
-    return Sonarlint.RuleSet.newBuilder()
-      .setLastModified(ruleSet.getLastModified())
-      .addAllRules(ruleSet.getRules().stream().map(ProjectStorage::adapt).collect(Collectors.toList())).build();
-  }
+    private static Sonarlint.AnalyzerConfiguration adapt(AnalyzerConfiguration analyzerConfiguration) {
+        return Sonarlint.AnalyzerConfiguration.newBuilder()
+            .putAllSettings(analyzerConfiguration.getSettings().getAll())
+            .putAllRuleSetsByLanguageKey(
+                analyzerConfiguration
+                    .getRuleSetByLanguageKey()
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> adapt(e.getValue())))
+            )
+            .build();
+    }
 
-  private static Sonarlint.RuleSet.ActiveRule adapt(ServerActiveRule rule) {
-    return Sonarlint.RuleSet.ActiveRule.newBuilder()
-      .setRuleKey(rule.getRuleKey())
-      .setSeverity(rule.getSeverity().name())
-      .setTemplateKey(rule.getTemplateKey())
-      .putAllParams(rule.getParams())
-      .build();
-  }
+    private static Sonarlint.RuleSet adapt(RuleSet ruleSet) {
+        return Sonarlint.RuleSet.newBuilder()
+            .setLastModified(ruleSet.getLastModified())
+            .addAllRules(
+                ruleSet.getRules()
+                .stream()
+                .map(ProjectStorage::adapt)
+                .collect(Collectors.toList())
+            )
+            .build();
+    }
 
-  private Path getAnalyzerConfigFilePath(String projectKey) {
-    return projectsRootPath.resolve(encodeForFs(projectKey)).resolve("analyzer_config.pb");
-  }
+    private static Sonarlint.RuleSet.ActiveRule adapt(ServerActiveRule rule) {
+        return Sonarlint.RuleSet.ActiveRule.newBuilder()
+            .setRuleKey(rule.getRuleKey())
+            .setSeverity(rule.getSeverity().name())
+            .setTemplateKey(rule.getTemplateKey())
+            .putAllParams(rule.getParams())
+            .build();
+    }
 
-  private Path getProjectBranchesFilePath(String projectKey) {
-    return projectsRootPath.resolve(encodeForFs(projectKey)).resolve("project_branches.pb");
-  }
+    private Path getAnalyzerConfigFilePath(String projectKey) {
+        return projectsRootPath.resolve(encodeForFs(projectKey)).resolve("analyzer_config.pb");
+    }
+
+    private Path getProjectBranchesFilePath(String projectKey) {
+        return projectsRootPath.resolve(encodeForFs(projectKey)).resolve("project_branches.pb");
+    }
 
 }

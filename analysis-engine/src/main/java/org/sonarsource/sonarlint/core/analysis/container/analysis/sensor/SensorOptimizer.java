@@ -29,64 +29,76 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 @SonarLintSide
 public class SensorOptimizer {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final FileSystem fs;
-  private final ActiveRules activeRules;
-  private final Configuration config;
+    private final FileSystem fs;
+    private final ActiveRules activeRules;
+    private final Configuration config;
 
-  public SensorOptimizer(FileSystem fs, ActiveRules activeRules, Configuration config) {
-    this.fs = fs;
-    this.activeRules = activeRules;
-    this.config = config;
-  }
-
-  /**
-   * Decide if the given Sensor should be executed.
-   */
-  public boolean shouldExecute(DefaultSensorDescriptor descriptor) {
-    if (!fsCondition(descriptor)) {
-      LOG.debug("'{}' skipped because there is no related files in the current project", descriptor.name());
-      return false;
+    public SensorOptimizer(FileSystem fs, ActiveRules activeRules, Configuration config) {
+        this.fs = fs;
+        this.activeRules = activeRules;
+        this.config = config;
     }
-    if (!activeRulesCondition(descriptor)) {
-      LOG.debug("'{}' skipped because there is no related rules activated", descriptor.name());
-      return false;
-    }
-    if (!settingsCondition(descriptor)) {
-      LOG.debug("'{}' skipped because one of the required properties is missing", descriptor.name());
-      return false;
-    }
-    return true;
-  }
 
-  private boolean settingsCondition(DefaultSensorDescriptor descriptor) {
-    if (descriptor.configurationPredicate() != null) {
-      return descriptor.configurationPredicate().test(config);
-    }
-    return true;
-  }
-
-  private boolean activeRulesCondition(DefaultSensorDescriptor descriptor) {
-    if (!descriptor.ruleRepositories().isEmpty()) {
-      for (String repoKey : descriptor.ruleRepositories()) {
-        if (!activeRules.findByRepository(repoKey).isEmpty()) {
-          return true;
+    /**
+     * Decide if the given Sensor should be executed.
+     */
+    public boolean shouldExecute(DefaultSensorDescriptor descriptor) {
+        if (!fsCondition(descriptor)) {
+            LOG.debug(
+                "'{}' skipped because there is no related files in the current project",
+                descriptor.name()
+            );
+            return false;
         }
-      }
-      return false;
+        if (!activeRulesCondition(descriptor)) {
+            LOG.debug(
+                "'{}' skipped because there is no related rules activated",
+                descriptor.name()
+            );
+            return false;
+        }
+        if (!settingsCondition(descriptor)) {
+            LOG.debug(
+                "'{}' skipped because one of the required properties is missing",
+                descriptor.name()
+            );
+            return false;
+        }
+        return true;
     }
-    return true;
-  }
 
-  private boolean fsCondition(DefaultSensorDescriptor descriptor) {
-    if (!descriptor.languages().isEmpty() || descriptor.type() != null) {
-      var langPredicate = descriptor.languages().isEmpty() ? fs.predicates().all() : fs.predicates().hasLanguages(descriptor.languages());
-
-      var typePredicate = descriptor.type() == null ? fs.predicates().all() : fs.predicates().hasType(descriptor.type());
-      return fs.hasFiles(fs.predicates().and(langPredicate, typePredicate));
+    private boolean settingsCondition(DefaultSensorDescriptor descriptor) {
+        if (descriptor.configurationPredicate() != null) {
+            return descriptor.configurationPredicate().test(config);
+        }
+        return true;
     }
-    return true;
-  }
+
+    private boolean activeRulesCondition(DefaultSensorDescriptor descriptor) {
+        if (!descriptor.ruleRepositories().isEmpty()) {
+            for (String repoKey : descriptor.ruleRepositories()) {
+                if (!activeRules.findByRepository(repoKey).isEmpty()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    private boolean fsCondition(DefaultSensorDescriptor descriptor) {
+        if (!descriptor.languages().isEmpty() || descriptor.type() != null) {
+            var langPredicate = descriptor.languages().isEmpty()
+                ? fs.predicates().all()
+                : fs.predicates().hasLanguages(descriptor.languages());
+            var typePredicate = descriptor.type() == null
+                ? fs.predicates().all()
+                : fs.predicates().hasType(descriptor.type());
+            return fs.hasFiles(fs.predicates().and(langPredicate, typePredicate));
+        }
+        return true;
+    }
 
 }

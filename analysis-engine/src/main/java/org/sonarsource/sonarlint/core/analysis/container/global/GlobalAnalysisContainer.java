@@ -31,71 +31,77 @@ import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentCo
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.SonarLintRuntimeImpl;
 
 public class GlobalAnalysisContainer extends SpringComponentContainer {
-  protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private GlobalExtensionContainer globalExtensionContainer;
-  private ModuleRegistry moduleRegistry;
-  private final AnalysisEngineConfiguration analysisGlobalConfig;
-  private final LoadedPlugins loadedPlugins;
+    protected static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public GlobalAnalysisContainer(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
-    this.analysisGlobalConfig = analysisGlobalConfig;
-    this.loadedPlugins = loadedPlugins;
-  }
+    private GlobalExtensionContainer globalExtensionContainer;
+    private ModuleRegistry moduleRegistry;
+    private final AnalysisEngineConfiguration analysisGlobalConfig;
+    private final LoadedPlugins loadedPlugins;
 
-  @Override
-  protected void doBeforeStart() {
-    var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
-    var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
-
-    add(
-      analysisGlobalConfig,
-      loadedPlugins,
-      GlobalSettings.class,
-      new GlobalConfigurationProvider(),
-      AnalysisExtensionInstaller.class,
-      new SonarQubeVersion(sonarPluginApiVersion),
-      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion, analysisGlobalConfig.getClientPid()),
-
-      new GlobalTempFolderProvider(),
-      UriReader.class,
-      Clock.systemDefaultZone(),
-      System2.INSTANCE);
-  }
-
-  @Override
-  protected void doAfterStart() {
-    declarePluginProperties();
-    globalExtensionContainer = new GlobalExtensionContainer(this);
-    globalExtensionContainer.startComponents();
-    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, analysisGlobalConfig.getModulesProvider());
-  }
-
-  @Override
-  public SpringComponentContainer stopComponents() {
-    try {
-      if (moduleRegistry != null) {
-        moduleRegistry.stopAll();
-      }
-      if (globalExtensionContainer != null) {
-        globalExtensionContainer.stopComponents();
-      }
-      loadedPlugins.unload();
-    } catch (Exception e) {
-      LOG.error("Cannot close analysis engine", e);
-    } finally {
-      super.stopComponents();
+    public GlobalAnalysisContainer(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
+        this.analysisGlobalConfig = analysisGlobalConfig;
+        this.loadedPlugins = loadedPlugins;
     }
-    return this;
-  }
 
-  private void declarePluginProperties() {
-    loadedPlugins.getPluginInstancesByKeys().values().forEach(this::declareProperties);
-  }
+    @Override
+    protected void doBeforeStart() {
+        var sonarPluginApiVersion = ApiVersions.loadSonarPluginApiVersion();
+        var sonarlintPluginApiVersion = ApiVersions.loadSonarLintPluginApiVersion();
+        add(
+            analysisGlobalConfig,
+            loadedPlugins,
+            GlobalSettings.class,
+            new GlobalConfigurationProvider(),
+            AnalysisExtensionInstaller.class,
+            new SonarQubeVersion(sonarPluginApiVersion),
+            new SonarLintRuntimeImpl(
+                sonarPluginApiVersion,
+                sonarlintPluginApiVersion,
+                analysisGlobalConfig.getClientPid()
+            ),
+            new GlobalTempFolderProvider(),
+            UriReader.class,
+            Clock.systemDefaultZone(),
+            System2.INSTANCE
+        );
+    }
 
-  // Visible for medium tests
-  public ModuleRegistry getModuleRegistry() {
-    return moduleRegistry;
-  }
+    @Override
+    protected void doAfterStart() {
+        declarePluginProperties();
+        globalExtensionContainer = new GlobalExtensionContainer(this);
+        globalExtensionContainer.startComponents(); // 注册lifespan=INSTANCE扩展点
+        this.moduleRegistry = new ModuleRegistry(
+            globalExtensionContainer,
+            analysisGlobalConfig.getModulesProvider()
+        );
+    }
 
+    @Override
+    public SpringComponentContainer stopComponents() {
+        try {
+            if (moduleRegistry != null) {
+                moduleRegistry.stopAll();
+            }
+            if (globalExtensionContainer != null) {
+                globalExtensionContainer.stopComponents();
+            }
+            loadedPlugins.unload();
+        } catch (Exception e) {
+            LOG.error("Cannot close analysis engine", e);
+        } finally {
+            super.stopComponents();
+        }
+        return this;
+    }
+
+    private void declarePluginProperties() {
+        loadedPlugins.getPluginInstancesByKeys().values().forEach(this::declareProperties);
+    }
+
+    // Visible for medium tests
+    public ModuleRegistry getModuleRegistry() {
+        return moduleRegistry;
+    }
 }

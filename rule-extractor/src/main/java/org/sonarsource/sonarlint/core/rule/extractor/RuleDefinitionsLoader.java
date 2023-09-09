@@ -21,23 +21,33 @@ package org.sonarsource.sonarlint.core.rule.extractor;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
+
 import org.sonar.api.server.rule.RulesDefinition;
+
+import static java.lang.System.out;
 
 /**
  * Load rules directly from plugins {@link RulesDefinition}
  */
 public class RuleDefinitionsLoader {
-  private final RulesDefinition.Context context;
 
-  public RuleDefinitionsLoader(Optional<List<RulesDefinition>> pluginDefs) {
-    context = new RulesDefinition.Context();
-    for (var pluginDefinition : pluginDefs.orElse(List.of())) {
-      pluginDefinition.define(context);
+    private final RulesDefinition.Context context;
+
+    // 执行所有可用插件的RulesDefinition.define
+    public RuleDefinitionsLoader(Optional<List<RulesDefinition>> pluginDefs) {
+        // // ???
+        // Stream.of(Thread.currentThread().getStackTrace()).forEach(
+        //     e -> out.printf("--- RuleDefinitionsLoader - %s\n", e)
+        // );
+        context = new RulesDefinition.Context();
+        for (var pluginDefinition : pluginDefs.orElse(List.of())) {
+            pluginDefinition.define(context);
+        }
     }
-  }
 
-  public RulesDefinition.Context getContext() {
-    return context;
-  }
+    public RulesDefinition.Context getContext() {
+        return context;
+    }
 
 }

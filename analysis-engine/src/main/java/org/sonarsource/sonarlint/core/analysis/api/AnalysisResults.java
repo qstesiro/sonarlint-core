@@ -28,45 +28,46 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Language;
 
 public class AnalysisResults {
-  private final Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
-  private int indexedFileCount;
-  private final Map<ClientInputFile, Language> languagePerFile = new LinkedHashMap<>();
 
-  public AnalysisResults setIndexedFileCount(int indexedFileCount) {
-    this.indexedFileCount = indexedFileCount;
-    return this;
-  }
+    private final Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
+    private int indexedFileCount;
+    private final Map<ClientInputFile, Language> languagePerFile = new LinkedHashMap<>();
 
-  public void addFailedAnalysisFile(ClientInputFile inputFile) {
-    failedAnalysisFiles.add(inputFile);
-  }
+    public AnalysisResults setIndexedFileCount(int indexedFileCount) {
+        this.indexedFileCount = indexedFileCount;
+        return this;
+    }
 
-  /**
-   * Detected languages for each file.
-   * The values in the map can be null if no language was detected for some files.
-   */
-  public Map<ClientInputFile, Language> languagePerFile() {
-    return languagePerFile;
-  }
+    public void addFailedAnalysisFile(ClientInputFile inputFile) {
+        failedAnalysisFiles.add(inputFile);
+    }
 
-  public void setLanguageForFile(ClientInputFile file, @Nullable Language language) {
-    this.languagePerFile.put(file, language);
-  }
+    /**
+     * Detected languages for each file.
+     * The values in the map can be null if no language was detected for some files.
+     */
+    public Map<ClientInputFile, Language> languagePerFile() {
+        return languagePerFile;
+    }
 
-  /**
-   * Number of file indexed. This number can be different than number of provided {@link ClientInputFile} since
-   * InputFileFilter can exclude some files.
-   */
-  public int indexedFileCount() {
-    return indexedFileCount;
-  }
+    public void setLanguageForFile(ClientInputFile file, @Nullable Language language) {
+        this.languagePerFile.put(file, language);
+    }
 
-  /**
-   * Input files for which there were analysis errors. The analyzers failed to correctly handle these files, and therefore there might be issues
-   * missing or no issues at all for these files.
-   */
-  public Collection<ClientInputFile> failedAnalysisFiles() {
-    return failedAnalysisFiles;
-  }
+    /**
+     * Number of file indexed. This number can be different than number of provided {@link ClientInputFile} since
+     * InputFileFilter can exclude some files.
+     */
+    public int indexedFileCount() {
+        return indexedFileCount;
+    }
+
+    /**
+     * Input files for which there were analysis errors. The analyzers failed to correctly handle these files, and therefore there might be issues
+     * missing or no issues at all for these files.
+     */
+    public Collection<ClientInputFile> failedAnalysisFiles() {
+        return failedAnalysisFiles;
+    }
 
 }

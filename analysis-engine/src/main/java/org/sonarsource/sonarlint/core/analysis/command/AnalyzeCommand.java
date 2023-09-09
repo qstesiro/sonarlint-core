@@ -30,46 +30,53 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 public class AnalyzeCommand implements Command<AnalysisResults> {
-  @Nullable
-  private final Object moduleKey;
-  private final AnalysisConfiguration configuration;
-  private final Consumer<Issue> issueListener;
-  private final ClientLogOutput logOutput;
 
-  public AnalyzeCommand(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable ClientLogOutput logOutput) {
-    this.moduleKey = moduleKey;
-    this.configuration = configuration;
-    this.issueListener = issueListener;
-    this.logOutput = logOutput;
-  }
+    @Nullable
+    private final Object moduleKey;
+    private final AnalysisConfiguration configuration;
+    private final Consumer<Issue> issueListener;
+    private final ClientLogOutput logOutput;
 
-  @Override
-  public AnalysisResults execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
-    if (logOutput != null) {
-      SonarLintLogger.setTarget(logOutput);
+    public AnalyzeCommand(
+        @Nullable Object moduleKey,
+        AnalysisConfiguration configuration,
+        Consumer<Issue> issueListener,
+        @Nullable ClientLogOutput logOutput
+    ) {
+        this.moduleKey = moduleKey;
+        this.configuration = configuration;
+        this.issueListener = issueListener;
+        this.logOutput = logOutput;
     }
-    var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
-    if (moduleContainer == null) {
-      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
-      moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
-    }
-    Throwable originalException = null;
-    try {
-      return moduleContainer.analyze(configuration, issueListener, progressMonitor);
-    } catch (Throwable e) {
-      originalException = e;
-      throw e;
-    } finally {
-      try {
-        if (moduleContainer.isTransient()) {
-          moduleContainer.stopComponents();
+
+    @Override
+    public AnalysisResults execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
+        if (logOutput != null) {
+            SonarLintLogger.setTarget(logOutput);
         }
-      } catch (Exception e) {
-        if (originalException != null) {
-          e.addSuppressed(originalException);
+        var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
+        if (moduleContainer == null) {
+            // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
+            moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
         }
-        throw e;
-      }
+        Throwable originalException = null;
+        try {
+            // 注册所有ANALYSIS(SINGLE_ANALYSIS)扩展点
+            return moduleContainer.analyze(configuration, issueListener, progressMonitor);
+        } catch (Throwable e) {
+            originalException = e;
+            throw e;
+        } finally {
+            try {
+                if (moduleContainer.isTransient()) {
+                    moduleContainer.stopComponents();
+                }
+            } catch (Exception e) {
+                if (originalException != null) {
+                    e.addSuppressed(originalException);
+                }
+                throw e;
+            }
+        }
     }
-  }
 }

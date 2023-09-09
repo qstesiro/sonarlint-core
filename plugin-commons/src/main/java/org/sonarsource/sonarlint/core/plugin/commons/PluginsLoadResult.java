@@ -23,19 +23,23 @@ import java.util.Map;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 
 public class PluginsLoadResult {
-  private final LoadedPlugins loadedPlugins;
-  private final Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
-  PluginsLoadResult(LoadedPlugins loadedPlugins, Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys) {
-    this.loadedPlugins = loadedPlugins;
-    this.pluginCheckResultByKeys = pluginCheckResultByKeys;
-  }
+    private final LoadedPlugins loadedPlugins;
+    private final Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
-  public LoadedPlugins getLoadedPlugins() {
-    return loadedPlugins;
-  }
+    PluginsLoadResult(
+        LoadedPlugins loadedPlugins,
+        Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys
+    ) {
+        this.loadedPlugins = loadedPlugins;
+        this.pluginCheckResultByKeys = pluginCheckResultByKeys;
+    }
 
-  public Map<String, PluginRequirementsCheckResult> getPluginCheckResultByKeys() {
-    return pluginCheckResultByKeys;
-  }
+    public LoadedPlugins getLoadedPlugins() {
+        return loadedPlugins;
+    }
+
+    public Map<String, PluginRequirementsCheckResult> getPluginCheckResultByKeys() {
+        return pluginCheckResultByKeys;
+    }
 }

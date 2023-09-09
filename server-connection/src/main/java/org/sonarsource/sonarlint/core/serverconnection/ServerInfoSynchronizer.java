@@ -23,23 +23,24 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 
 public class ServerInfoSynchronizer {
-  private final ServerInfoStorage serverInfoStorage;
 
-  public ServerInfoSynchronizer(ServerInfoStorage serverInfoStorage) {
-    this.serverInfoStorage = serverInfoStorage;
-  }
+    private final ServerInfoStorage serverInfoStorage;
 
-  public StoredServerInfo readOrSynchronizeServerInfo(ServerApi serverApi) {
-    return serverInfoStorage.getServerInfo()
-      .orElseGet(() -> {
-        synchronize(serverApi);
-        return serverInfoStorage.getServerInfo().get();
-      });
-  }
+    public ServerInfoSynchronizer(ServerInfoStorage serverInfoStorage) {
+        this.serverInfoStorage = serverInfoStorage;
+    }
 
-  public void synchronize(ServerApi serverApi) {
-    var serverStatus = serverApi.system().getStatusSync();
-    ServerVersionAndStatusChecker.checkServerUpAndSupported(serverStatus);
-    serverInfoStorage.store(serverStatus);
-  }
+    public StoredServerInfo readOrSynchronizeServerInfo(ServerApi serverApi) {
+        return serverInfoStorage.getServerInfo()
+            .orElseGet(() -> {
+                    synchronize(serverApi);
+                    return serverInfoStorage.getServerInfo().get();
+                });
+    }
+
+    public void synchronize(ServerApi serverApi) {
+        var serverStatus = serverApi.system().getStatusSync();
+        ServerVersionAndStatusChecker.checkServerUpAndSupported(serverStatus);
+        serverInfoStorage.store(serverStatus);
+    }
 }

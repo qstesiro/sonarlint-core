@@ -33,87 +33,157 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 
+import static java.lang.System.out;
+
 public class PluginsSynchronizer {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final Set<String> sonarSourceDisabledPluginKeys;
-  private final PluginsStorage pluginsStorage;
-  private final Set<String> embeddedPluginKeys;
-  private final PluginsMinVersions pluginsMinVersions = new PluginsMinVersions();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public PluginsSynchronizer(Set<Language> enabledLanguages, PluginsStorage pluginsStorage, Set<String> embeddedPluginKeys) {
-    this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
-    this.pluginsStorage = pluginsStorage;
-    this.embeddedPluginKeys = embeddedPluginKeys;
-  }
+    private final Set<String> sonarSourceDisabledPluginKeys;
+    private final PluginsStorage pluginsStorage;
+    private final Set<String> embeddedPluginKeys;
+    private final PluginsMinVersions pluginsMinVersions = new PluginsMinVersions();
 
-  public boolean synchronize(ServerApi serverApi, ProgressMonitor progressMonitor) {
-    var storedPluginsByKey = pluginsStorage.getStoredPluginsByKey();
-    var serverPlugins = serverApi.plugins().getInstalled();
-    var pluginsToDownload = serverPlugins.stream()
-      .filter(p -> shouldDownload(p, storedPluginsByKey))
-      .collect(Collectors.toList());
-    downloadAll(serverApi, pluginsToDownload, progressMonitor);
-    return !pluginsToDownload.isEmpty();
-  }
-
-  private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, ProgressMonitor progressMonitor) {
-    var i = 0;
-    for (ServerPlugin p : pluginsToDownload) {
-      progressMonitor.setProgressAndCheckCancel("Downloading analyzer '" + p.getKey() + "'", i++ / (float) pluginsToDownload.size());
-      downloadPlugin(serverApi, p);
+    public PluginsSynchronizer(
+        Set<Language> enabledLanguages,
+        PluginsStorage pluginsStorage,
+        Set<String> embeddedPluginKeys
+    ) {
+        this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
+        this.pluginsStorage = pluginsStorage;
+        this.embeddedPluginKeys = embeddedPluginKeys;
     }
-  }
 
-  private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin) {
-    LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
-    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> pluginsStorage.store(plugin, pluginBinary));
-  }
+    public boolean synchronize(ServerApi serverApi, ProgressMonitor progressMonitor) {
+        var storedPluginsByKey = pluginsStorage.getStoredPluginsByKey();
+        var serverPlugins = serverApi.plugins().getInstalled();
+        // ???
+        serverPlugins.stream().forEach(
+            e -> out.printf(
+                "--- plugin - key: %s, fileName: %s, lintSupported: %b\n",
+                e.getKey(),
+                e.getFilename(),
+                e.isSonarLintSupported()
+            )
+        );
+        var pluginsToDownload = serverPlugins
+            .stream()
+            .filter(p -> shouldDownload(p, storedPluginsByKey))
+            .collect(Collectors.toList());
+        // ???
+        pluginsToDownload.stream().forEach(
+            e -> out.printf(
+                "--- download - key: %s, fileName: %s, lintSupported: %b\n",
+                e.getKey(),
+                e.getFilename(),
+                e.isSonarLintSupported()
+            )
+        );
+        downloadAll(serverApi, pluginsToDownload, progressMonitor);
+        return !pluginsToDownload.isEmpty();
+    }
 
-  private boolean shouldDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
-    if (embeddedPluginKeys.contains(serverPlugin.getKey())) {
-      LOG.debug("[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.", serverPlugin.getKey());
-      return false;
+    private void downloadAll(
+        ServerApi serverApi,
+        List<ServerPlugin> pluginsToDownload,
+        ProgressMonitor progressMonitor
+    ) {
+        var i = 0;
+        for (ServerPlugin p : pluginsToDownload) {
+            progressMonitor.setProgressAndCheckCancel(
+                "Downloading analyzer '" + p.getKey() + "'",
+                i++ / (float) pluginsToDownload.size()
+            );
+            downloadPlugin(serverApi, p);
+        }
     }
-    if (upToDate(serverPlugin, storedPluginsByKey)) {
-      LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
-      return false;
-    }
-    if (!serverPlugin.isSonarLintSupported()) {
-      LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", serverPlugin.getKey());
-      return false;
-    }
-    if (sonarSourceDisabledPluginKeys.contains(serverPlugin.getKey())) {
-      LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.", serverPlugin.getKey());
-      return false;
-    }
-    var pluginVersion = VersionUtils.getJarVersion(serverPlugin.getFilename());
-    if (!pluginsMinVersions.isVersionSupported(serverPlugin.getKey(), pluginVersion)) {
-      var minimumVersion = pluginsMinVersions.getMinimumVersion(serverPlugin.getKey());
-      LOG.debug("[SYNC] Code analyzer '{}' version '{}' is not supported (minimal version is '{}'). Skip downloading it.",
-        serverPlugin.getKey(), pluginVersion, minimumVersion);
-      return false;
-    }
-    return true;
-  }
 
-  private static boolean upToDate(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
-    return storedPluginsByKey.containsKey(serverPlugin.getKey())
-      && storedPluginsByKey.get(serverPlugin.getKey()).hasSameHash(serverPlugin);
-  }
-
-  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
-
-  private static Set<String> getSonarSourceDisabledPluginKeys(Set<Language> enabledLanguages) {
-    var languagesByPluginKey = Arrays.stream(Language.values()).collect(Collectors.groupingBy(Language::getPluginKey));
-    var disabledPluginKeys = languagesByPluginKey.entrySet().stream()
-      .filter(e -> Collections.disjoint(enabledLanguages, e.getValue()))
-      .map(Map.Entry::getKey)
-      .collect(Collectors.toSet());
-    if (!enabledLanguages.contains(Language.TS)) {
-      // Special case for old TS plugin
-      disabledPluginKeys.add(OLD_SONARTS_PLUGIN_KEY);
+    private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin) {
+        LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
+        serverApi.plugins().getPlugin(
+            plugin.getKey(),
+            pluginBinary -> pluginsStorage.store(plugin, pluginBinary)
+        );
     }
-    return disabledPluginKeys;
-  }
+
+    private boolean shouldDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
+        if (embeddedPluginKeys.contains(serverPlugin.getKey())) {
+            out.printf(
+                "[SYNC] Code analyzer '%s' is embedded in SonarLint. Skip downloading it.\n",
+                serverPlugin.getKey()
+            );
+            LOG.debug(
+                "[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.",
+                serverPlugin.getKey()
+            );
+            return false;
+        }
+        if (upToDate(serverPlugin, storedPluginsByKey)) {
+            out.printf(
+                "[SYNC] Code analyzer '%s' is up-to-date. Skip downloading it.\n",
+                serverPlugin.getKey()
+            );
+            LOG.debug(
+                "[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.",
+                serverPlugin.getKey()
+            );
+            return false;
+        }
+        if (!serverPlugin.isSonarLintSupported()) {
+            out.printf(
+                "[SYNC] Code analyzer '%s' does not support SonarLint. Skip downloading it.\n",
+                serverPlugin.getKey()
+            );
+            LOG.debug(
+                "[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.",
+                serverPlugin.getKey()
+            );
+            return false;
+        }
+        if (sonarSourceDisabledPluginKeys.contains(serverPlugin.getKey())) {
+            out.printf(
+                "[SYNC] Code analyzer '%s' is disabled in SonarLint (language not enabled). " +
+                "Skip downloading it.\n",
+                serverPlugin.getKey()
+            );
+            LOG.debug(
+                "[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). " +
+                "Skip downloading it.",
+                serverPlugin.getKey()
+            );
+            return false;
+        }
+        var pluginVersion = VersionUtils.getJarVersion(serverPlugin.getFilename());
+        if (!pluginsMinVersions.isVersionSupported(serverPlugin.getKey(), pluginVersion)) {
+            var minimumVersion = pluginsMinVersions.getMinimumVersion(serverPlugin.getKey());
+            LOG.debug(
+                "[SYNC] Code analyzer '{}' version '{}' is not supported (minimal version is '{}'). " +
+                "Skip downloading it.",
+                serverPlugin.getKey(), pluginVersion, minimumVersion);
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean upToDate(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
+        return storedPluginsByKey.containsKey(serverPlugin.getKey())
+            && storedPluginsByKey.get(serverPlugin.getKey()).hasSameHash(serverPlugin);
+    }
+
+    private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
+
+    private static Set<String> getSonarSourceDisabledPluginKeys(Set<Language> enabledLanguages) {
+        var languagesByPluginKey = Arrays.stream(Language.values())
+            .collect(Collectors.groupingBy(Language::getPluginKey));
+        var disabledPluginKeys = languagesByPluginKey
+            .entrySet().stream()
+            .filter(e -> Collections.disjoint(enabledLanguages, e.getValue()))
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toSet());
+        if (!enabledLanguages.contains(Language.TS)) {
+            // Special case for old TS plugin
+            disabledPluginKeys.add(OLD_SONARTS_PLUGIN_KEY);
+        }
+        return disabledPluginKeys;
+    }
 }

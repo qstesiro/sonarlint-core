@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface Container {
+
   Container add(Object... objects);
 
   <T> T getComponentByType(Class<T> type);

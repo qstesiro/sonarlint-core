@@ -32,38 +32,43 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufUtil.writeToFile;
 
 public class ServerInfoStorage {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
-  public static final String SERVER_INFO_PB = "server_info.pb";
 
-  private final Path rootPath;
-  private final RWLock rwLock = new RWLock();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
+    public static final String SERVER_INFO_PB = "server_info.pb";
 
-  public ServerInfoStorage(Path rootPath) {
-    this.rootPath = rootPath;
-  }
+    private final Path rootPath;
+    private final RWLock rwLock = new RWLock();
 
-  public void store(ServerInfo serverInfo) {
-    var serverInfoFilePath = getServerInfoFilePath();
-    FileUtils.mkdirs(serverInfoFilePath.getParent());
-    var serverInfoToStore = adapt(serverInfo);
-    LOG.debug("Storing server info in {}", serverInfoFilePath);
-    rwLock.write(() -> writeToFile(serverInfoToStore, serverInfoFilePath));
-  }
+    public ServerInfoStorage(Path rootPath) {
+        this.rootPath = rootPath;
+    }
 
-  public Optional<StoredServerInfo> getServerInfo() {
-    var filePath = getServerInfoFilePath();
-    return rwLock.read(() -> Files.exists(filePath) ? Optional.of(adapt(ProtobufUtil.readFile(filePath, Sonarlint.ServerInfo.parser()))) : Optional.empty());
-  }
+    public void store(ServerInfo serverInfo) {
+        var serverInfoFilePath = getServerInfoFilePath();
+        FileUtils.mkdirs(serverInfoFilePath.getParent());
+        var serverInfoToStore = adapt(serverInfo);
+        LOG.debug("Storing server info in {}", serverInfoFilePath);
+        rwLock.write(() -> writeToFile(serverInfoToStore, serverInfoFilePath));
+    }
 
-  private Path getServerInfoFilePath() {
-    return rootPath.resolve(SERVER_INFO_PB);
-  }
+    public Optional<StoredServerInfo> getServerInfo() {
+        var filePath = getServerInfoFilePath();
+        return rwLock.read(
+            () -> Files.exists(filePath)
+            ? Optional.of(adapt(ProtobufUtil.readFile(filePath, Sonarlint.ServerInfo.parser())))
+            : Optional.empty()
+        );
+    }
 
-  private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo) {
-    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).build();
-  }
+    private Path getServerInfoFilePath() {
+        return rootPath.resolve(SERVER_INFO_PB);
+    }
 
-  private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {
-    return new StoredServerInfo(Version.create(serverInfo.getVersion()));
-  }
+    private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo) {
+        return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).build();
+    }
+
+    private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {
+        return new StoredServerInfo(Version.create(serverInfo.getVersion()));
+    }
 }

@@ -36,69 +36,115 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import static java.util.stream.Collectors.toSet;
 
 public class LocalStorageSynchronizer {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final Set<String> enabledLanguageKeys;
-  private final ServerInfoSynchronizer serverInfoSynchronizer;
-  private final PluginsSynchronizer pluginsSynchronizer;
-  private final ProjectStorage projectStorage;
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, PluginsStorage pluginsStorage,
-    ProjectStorage projectStorage) {
-    this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(toSet());
-    this.projectStorage = projectStorage;
-    this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, pluginsStorage, embeddedPluginKeys);
-    this.serverInfoSynchronizer = serverInfoSynchronizer;
-  }
+    private final Set<String> enabledLanguageKeys;
+    private final ServerInfoSynchronizer serverInfoSynchronizer;
+    private final PluginsSynchronizer pluginsSynchronizer;
+    private final ProjectStorage projectStorage;
 
-  public SynchronizationResult synchronize(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor progressMonitor) {
-    serverInfoSynchronizer.synchronize(serverApi);
-
-    var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
-    projectKeys.stream()
-      .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeAnalyzerConfig(serverApi, projectKey, progressMonitor)))
-      .forEach(projectStorage::store);
-    var branchByProjectKey = projectKeys.stream()
-      .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeProjectBranches(serverApi, projectKey)));
-    branchByProjectKey
-      .forEach(projectStorage::store);
-    return new SynchronizationResult(anyPluginUpdated);
-  }
-
-  private AnalyzerConfiguration synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {
-    LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
-    Map<String, RuleSet> currentRuleSets;
-    try {
-      currentRuleSets = projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
-    } catch (StorageException e) {
-      currentRuleSets = Map.of();
+    public LocalStorageSynchronizer(
+        Set<Language> enabledLanguages,
+        Set<String> embeddedPluginKeys,
+        ServerInfoSynchronizer serverInfoSynchronizer,
+        PluginsStorage pluginsStorage,
+        ProjectStorage projectStorage
+    ) {
+        this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(toSet());
+        this.projectStorage = projectStorage;
+        this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, pluginsStorage, embeddedPluginKeys);
+        this.serverInfoSynchronizer = serverInfoSynchronizer;
     }
-    var currentRuleSetsFinal = currentRuleSets;
-    var settings = new Settings(serverApi.settings().getProjectSettings(projectKey));
-    var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey).stream()
-      .filter(qualityProfile -> enabledLanguageKeys.contains(qualityProfile.getLanguage()))
-      .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, progressMonitor)));
-    return new AnalyzerConfiguration(settings, ruleSetsByLanguageKey);
-  }
 
-  private static RuleSet toRuleSet(ServerApi serverApi, Map<String, RuleSet> currentRuleSets, QualityProfile profile, ProgressMonitor progressMonitor) {
-    var language = profile.getLanguage();
-    if (!currentRuleSets.containsKey(language) || !currentRuleSets.get(language).getLastModified().equals(profile.getRulesUpdatedAt())) {
-      var profileKey = profile.getKey();
-      LOG.info("[SYNC] Fetching rule set for language '{}' from profile '{}'", language, profileKey);
-      var profileActiveRules = serverApi.rules().getAllActiveRules(profileKey, progressMonitor);
-      return new RuleSet(profileActiveRules, profile.getRulesUpdatedAt());
-    } else {
-      LOG.info("[SYNC] Active rules for '{}' are up-to-date", language);
-      return currentRuleSets.get(language);
+    public SynchronizationResult synchronize(
+        ServerApi serverApi,
+        Set<String> projectKeys,
+        ProgressMonitor progressMonitor
+    ) {
+        serverInfoSynchronizer.synchronize(serverApi);
+        var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
+        projectKeys.stream()
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    projectKey -> synchronizeAnalyzerConfig(serverApi, projectKey, progressMonitor)
+                )
+            )
+            .forEach(projectStorage::store);
+        var branchByProjectKey = projectKeys.stream()
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    projectKey -> synchronizeProjectBranches(serverApi, projectKey)
+                )
+            );
+        branchByProjectKey.forEach(projectStorage::store);
+        return new SynchronizationResult(anyPluginUpdated);
     }
-  }
 
-  private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
-    LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
-    var allBranches = serverApi.branches().getAllBranches(projectKey);
-    var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)
-      .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
-    return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);
-  }
+    private AnalyzerConfiguration synchronizeAnalyzerConfig(
+        ServerApi serverApi,
+        String projectKey,
+        ProgressMonitor progressMonitor
+    ) {
+        LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
+        Map<String, RuleSet> currentRuleSets;
+        try {
+            currentRuleSets = projectStorage.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
+        } catch (StorageException e) {
+            currentRuleSets = Map.of();
+        }
+        var currentRuleSetsFinal = currentRuleSets;
+        var settings = new Settings(serverApi.settings().getProjectSettings(projectKey));
+        var ruleSetsByLanguageKey = serverApi
+            .qualityProfile()
+            .getQualityProfiles(projectKey)
+            .stream()
+            .filter(qualityProfile -> enabledLanguageKeys.contains(qualityProfile.getLanguage()))
+            .collect(
+                Collectors.toMap(
+                    QualityProfile::getLanguage,
+                    profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, progressMonitor)
+                )
+            );
+        return new AnalyzerConfiguration(settings, ruleSetsByLanguageKey);
+    }
+
+    private static RuleSet toRuleSet(
+        ServerApi serverApi,
+        Map<String, RuleSet> currentRuleSets,
+        QualityProfile profile,
+        ProgressMonitor progressMonitor
+    ) {
+        var language = profile.getLanguage();
+        if (!currentRuleSets.containsKey(language) ||
+            !currentRuleSets
+                .get(language)
+                .getLastModified()
+                .equals(profile.getRulesUpdatedAt())) {
+            var profileKey = profile.getKey();
+            LOG.info("[SYNC] Fetching rule set for language '{}' from profile '{}'", language, profileKey);
+            var profileActiveRules = serverApi.rules().getAllActiveRules(profileKey, progressMonitor);
+            return new RuleSet(profileActiveRules, profile.getRulesUpdatedAt());
+        } else {
+            LOG.info("[SYNC] Active rules for '{}' are up-to-date", language);
+            return currentRuleSets.get(language);
+        }
+    }
+
+    private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
+        LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
+        var allBranches = serverApi.branches().getAllBranches(projectKey);
+        var mainBranch = allBranches
+            .stream()
+            .filter(ServerBranch::isMain)
+            .findFirst()
+            .map(ServerBranch::getName)
+            .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
+        return new ProjectBranches(
+            allBranches.stream().map(ServerBranch::getName).collect(toSet()),
+            mainBranch
+        );
+    }
 }

@@ -23,19 +23,19 @@ import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 
 public class VersionUtils {
-  private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
-  private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
 
-  private VersionUtils() {
-  }
+    private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
+    private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
 
-  @CheckForNull
-  public static String getJarVersion(String jarName) {
-    var matcher = JAR_VERSION_PATTERN.matcher(jarName);
-    if (matcher.find()) {
-      return matcher.group(1);
+    private VersionUtils() {
     }
 
-    return null;
-  }
+    @CheckForNull
+    public static String getJarVersion(String jarName) {
+        var matcher = JAR_VERSION_PATTERN.matcher(jarName);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
 }

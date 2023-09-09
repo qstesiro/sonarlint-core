@@ -53,160 +53,178 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
  */
 public class PluginInstancesLoader {
 
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
+    private static final String[] DEFAULT_SHARED_RESOURCES = {
+        "org/sonar/plugins",
+        "com/sonar/plugins",
+        "com/sonarsource/plugins"
+    };
 
-  private final PluginClassloaderFactory classloaderFactory;
-  private final ClassLoader baseClassLoader;
-  private final Collection<ClassLoader> classloadersToClose = new ArrayList<>();
-  private final List<Path> filesToDelete = new ArrayList<>();
+    private final PluginClassloaderFactory classloaderFactory;
+    private final ClassLoader baseClassLoader;
+    private final Collection<ClassLoader> classloadersToClose = new ArrayList<>();
+    private final List<Path> filesToDelete = new ArrayList<>();
 
-  public PluginInstancesLoader() {
-    this(new PluginClassloaderFactory());
-  }
+    public PluginInstancesLoader() {
+        this(new PluginClassloaderFactory());
+    }
 
-  PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
-    this.classloaderFactory = classloaderFactory;
-    this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
-  }
+    PluginInstancesLoader(PluginClassloaderFactory classloaderFactory) {
+        this.classloaderFactory = classloaderFactory;
+        this.baseClassLoader = new Slf4jBridgeClassLoader(getClass().getClassLoader());
+    }
 
-  public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
-    var defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
-    var classloaders = classloaderFactory.create(baseClassLoader, defs);
-    this.classloadersToClose.addAll(classloaders.values());
-    return instantiatePluginClasses(classloaders);
-  }
+    public Map<String, Plugin> instantiatePluginClasses(Collection<PluginInfo> plugins) {
+        var defs = defineClassloaders(plugins.stream().collect(Collectors.toMap(PluginInfo::getKey, p -> p)));
+        var classloaders = classloaderFactory.create(baseClassLoader, defs);
+        this.classloadersToClose.addAll(classloaders.values());
+        return instantiatePluginClasses(classloaders);
+    }
 
-  /**
-   * Defines the different classloaders to be created. Number of classloaders can be
-   * different than number of plugins.
-   */
-  Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey) {
-    Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
+    /**
+     * Defines the different classloaders to be created. Number of classloaders can be
+     * different than number of plugins.
+     */
+    Collection<PluginClassLoaderDef> defineClassloaders(Map<String, PluginInfo> pluginsByKey) {
+        Map<String, PluginClassLoaderDef> classloadersByBasePlugin = new HashMap<>();
 
-    for (PluginInfo info : pluginsByKey.values()) {
-      var baseKey = basePluginKey(info, pluginsByKey);
-      if (baseKey == null) {
-        continue;
-      }
-      var def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
-      def.addFiles(List.of(info.getJarFile()));
-      if (!info.getDependencies().isEmpty()) {
-        LOG.warn("Plugin '{}' embeds dependencies. This will be deprecated soon. Plugin should be updated.", info.getKey());
-        var tmpFolderForDeps = createTmpFolderForPluginDeps(info);
-        for (String dependency : info.getDependencies()) {
-          var tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
-          def.addFiles(List.of(tmpDepFile.toFile()));
-          filesToDelete.add(tmpDepFile);
+        for (PluginInfo info : pluginsByKey.values()) {
+            var baseKey = basePluginKey(info, pluginsByKey);
+            if (baseKey == null) {
+                continue;
+            }
+            var def = classloadersByBasePlugin.computeIfAbsent(baseKey, PluginClassLoaderDef::new);
+            def.addFiles(List.of(info.getJarFile()));
+            if (!info.getDependencies().isEmpty()) {
+                LOG.warn(
+                    "Plugin '{}' embeds dependencies. This will be deprecated soon. Plugin should be updated.",
+                    info.getKey()
+                );
+                var tmpFolderForDeps = createTmpFolderForPluginDeps(info);
+                for (String dependency : info.getDependencies()) {
+                    var tmpDepFile = extractDependencyInTempFolder(info, dependency, tmpFolderForDeps);
+                    def.addFiles(List.of(tmpDepFile.toFile()));
+                    filesToDelete.add(tmpDepFile);
+                }
+            }
+            def.addMainClass(info.getKey(), info.getMainClass());
+
+            for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
+                def.getExportMask().addInclusion(
+                    String.format("%s/%s/api/", defaultSharedResource, info.getKey())
+                );
+            }
         }
-      }
-      def.addMainClass(info.getKey(), info.getMainClass());
-
-      for (String defaultSharedResource : DEFAULT_SHARED_RESOURCES) {
-        def.getExportMask().addInclusion(String.format("%s/%s/api/", defaultSharedResource, info.getKey()));
-      }
+        return classloadersByBasePlugin.values();
     }
-    return classloadersByBasePlugin.values();
-  }
 
-  private static Path createTmpFolderForPluginDeps(PluginInfo info) {
-    try {
-      var prefix = "sonarlint_" + info.getKey();
-      return Files.createTempDirectory(prefix);
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to create temporary directory", e);
-    }
-  }
-
-  private static Path extractDependencyInTempFolder(PluginInfo info, String dependency, Path tempFolder) {
-    try {
-      var tmpDepFile = tempFolder.resolve(dependency);
-      if (!tmpDepFile.startsWith(tempFolder + File.separator)) {
-        throw new IOException("Entry is outside of the target dir: " + dependency);
-      }
-      Files.createDirectories(tmpDepFile.getParent());
-      extractFile(info.getJarFile().toPath(), dependency, tmpDepFile);
-      return tmpDepFile;
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to extract plugin dependency: " + dependency, e);
-    }
-  }
-
-  private static void extractFile(Path zipFile, String fileName, Path outputFile) throws IOException {
-    try (var fileSystem = FileSystems.newFileSystem(zipFile, null)) {
-      var fileToExtract = fileSystem.getPath(fileName);
-      Files.copy(fileToExtract, outputFile);
-    }
-  }
-
-  /**
-   * Instantiates collection of {@link org.sonar.api.Plugin} according to given metadata and classloaders
-   *
-   * @return the instances grouped by plugin key
-   * @throws IllegalStateException if at least one plugin can't be correctly loaded
-   */
-  Map<String, Plugin> instantiatePluginClasses(Map<PluginClassLoaderDef, ClassLoader> classloaders) {
-    // instantiate plugins
-    Map<String, Plugin> instancesByPluginKey = new HashMap<>();
-    for (Map.Entry<PluginClassLoaderDef, ClassLoader> entry : classloaders.entrySet()) {
-      var def = entry.getKey();
-      var classLoader = entry.getValue();
-
-      // the same classloader can be used by multiple plugins
-      for (Map.Entry<String, String> mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
-        var pluginKey = mainClassEntry.getKey();
-        var mainClass = mainClassEntry.getValue();
+    private static Path createTmpFolderForPluginDeps(PluginInfo info) {
         try {
-          instancesByPluginKey.put(pluginKey, (Plugin) classLoader.loadClass(mainClass).getDeclaredConstructor().newInstance());
-        } catch (UnsupportedClassVersionError e) {
-          LOG.error("The plugin [{}] does not support Java {}", pluginKey, SystemUtils.JAVA_RUNTIME_VERSION, e);
-        } catch (Throwable e) {
-          LOG.error("Fail to instantiate class [{}] of plugin [{}]", mainClass, pluginKey, e);
+            var prefix = "sonarlint_" + info.getKey();
+            return Files.createTempDirectory(prefix);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to create temporary directory", e);
         }
-      }
     }
-    return instancesByPluginKey;
-  }
 
-  public void unload() {
-    for (ClassLoader classLoader : classloadersToClose) {
-      if (classLoader instanceof Closeable) {
+    private static Path extractDependencyInTempFolder(PluginInfo info, String dependency, Path tempFolder) {
         try {
-          ((Closeable) classLoader).close();
-        } catch (Exception e) {
-          LOG.error("Fail to close classloader", e);
+            var tmpDepFile = tempFolder.resolve(dependency);
+            if (!tmpDepFile.startsWith(tempFolder + File.separator)) {
+                throw new IOException("Entry is outside of the target dir: " + dependency);
+            }
+            Files.createDirectories(tmpDepFile.getParent());
+            extractFile(info.getJarFile().toPath(), dependency, tmpDepFile);
+            return tmpDepFile;
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to extract plugin dependency: " + dependency, e);
         }
-      }
     }
-    classloadersToClose.clear();
-    for (Path fileToDelete : filesToDelete) {
-      try {
-        FileUtils.forceDelete(fileToDelete.toFile());
-      } catch (IOException e) {
-        LOG.error("Fail to delete " + fileToDelete.toString(), e);
-      }
-    }
-    filesToDelete.clear();
-  }
 
-  /**
-   * Get the root key of a tree of plugins. For example if plugin C depends on B, which depends on A, then
-   * B and C must be attached to the classloader of A. The method returns A in the three cases.
-   */
-  @CheckForNull
-  static String basePluginKey(PluginInfo plugin, Map<String, PluginInfo> allPluginsPerKey) {
-    var base = plugin.getKey();
-    var parentKey = plugin.getBasePlugin();
-    while (isNotEmpty(parentKey)) {
-      var parentPlugin = allPluginsPerKey.get(parentKey);
-      if (parentPlugin == null) {
-        LOG.warn("Unable to find base plugin '{}' referenced by plugin '{}'", parentKey, base);
-        return null;
-      }
-      base = parentPlugin.getKey();
-      parentKey = parentPlugin.getBasePlugin();
+    private static void extractFile(Path zipFile, String fileName, Path outputFile) throws IOException {
+        try (var fileSystem = FileSystems.newFileSystem(zipFile, null)) {
+            var fileToExtract = fileSystem.getPath(fileName);
+            Files.copy(fileToExtract, outputFile);
+        }
     }
-    return base;
-  }
+
+    /**
+     * Instantiates collection of {@link org.sonar.api.Plugin} according to given metadata and classloaders
+     *
+     * @return the instances grouped by plugin key
+     * @throws IllegalStateException if at least one plugin can't be correctly loaded
+     */
+    Map<String, Plugin> instantiatePluginClasses(Map<PluginClassLoaderDef, ClassLoader> classloaders) {
+        // instantiate plugins
+        Map<String, Plugin> instancesByPluginKey = new HashMap<>();
+        for (Map.Entry<PluginClassLoaderDef, ClassLoader> entry : classloaders.entrySet()) {
+            var def = entry.getKey();
+            var classLoader = entry.getValue();
+
+            // the same classloader can be used by multiple plugins
+            for (Map.Entry<String, String> mainClassEntry : def.getMainClassesByPluginKey().entrySet()) {
+                var pluginKey = mainClassEntry.getKey();
+                var mainClass = mainClassEntry.getValue();
+                try {
+                    instancesByPluginKey.put(
+                        pluginKey,
+                        (Plugin) classLoader.loadClass(mainClass).getDeclaredConstructor().newInstance()
+                    );
+                } catch (UnsupportedClassVersionError e) {
+                    LOG.error(
+                        "The plugin [{}] does not support Java {}",
+                        pluginKey, SystemUtils.JAVA_RUNTIME_VERSION, e
+                    );
+                } catch (Throwable e) {
+                    LOG.error("Fail to instantiate class [{}] of plugin [{}]", mainClass, pluginKey, e);
+                }
+            }
+        }
+        return instancesByPluginKey;
+    }
+
+    public void unload() {
+        for (ClassLoader classLoader : classloadersToClose) {
+            if (classLoader instanceof Closeable) {
+                try {
+                    ((Closeable) classLoader).close();
+                } catch (Exception e) {
+                    LOG.error("Fail to close classloader", e);
+                }
+            }
+        }
+        classloadersToClose.clear();
+        for (Path fileToDelete : filesToDelete) {
+            try {
+                FileUtils.forceDelete(fileToDelete.toFile());
+            } catch (IOException e) {
+                LOG.error("Fail to delete " + fileToDelete.toString(), e);
+            }
+        }
+        filesToDelete.clear();
+    }
+
+    /**
+     * Get the root key of a tree of plugins. For example if plugin C depends on B, which depends on A, then
+     * B and C must be attached to the classloader of A. The method returns A in the three cases.
+     */
+    @CheckForNull
+    static String basePluginKey(PluginInfo plugin, Map<String, PluginInfo> allPluginsPerKey) {
+        var base = plugin.getKey();
+        var parentKey = plugin.getBasePlugin();
+        while (isNotEmpty(parentKey)) {
+            var parentPlugin = allPluginsPerKey.get(parentKey);
+            if (parentPlugin == null) {
+                LOG.warn(
+                    "Unable to find base plugin '{}' referenced by plugin '{}'",
+                    parentKey, base
+                );
+                return null;
+            }
+            base = parentPlugin.getKey();
+            parentKey = parentPlugin.getBasePlugin();
+        }
+        return base;
+    }
 }

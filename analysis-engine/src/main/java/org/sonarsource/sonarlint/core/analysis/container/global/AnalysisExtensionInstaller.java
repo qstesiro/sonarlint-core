@@ -37,57 +37,75 @@ import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class AnalysisExtensionInstaller extends ExtensionInstaller {
 
-  private static final Logger LOG = Loggers.get(AnalysisExtensionInstaller.class);
+    private static final Logger LOG = Loggers.get(AnalysisExtensionInstaller.class);
 
-  private final Set<Language> enabledLanguages;
+    private final Set<Language> enabledLanguages;
 
-  private final LoadedPlugins loadedPlugins;
+    private final LoadedPlugins loadedPlugins;
 
-  public AnalysisExtensionInstaller(SonarLintRuntime sonarRuntime, LoadedPlugins loadedPlugins, Configuration bootConfiguration,
-                                    AnalysisEngineConfiguration analysisEngineConfig) {
-    super(sonarRuntime, bootConfiguration);
-    this.loadedPlugins = loadedPlugins;
-    enabledLanguages = analysisEngineConfig.getEnabledLanguages();
-  }
-
-  public AnalysisExtensionInstaller install(ExtensionContainer container, ContainerLifespan lifespan) {
-    super.install(container, loadedPlugins.getPluginInstancesByKeys(),
-      (pluginKey, extension) -> lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension));
-    return this;
-  }
-
-  private static ContainerLifespan getSonarLintSideLifespan(Object extension) {
-    var annotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
-    if (annotation != null) {
-      var lifespan = annotation.lifespan();
-      if (SonarLintSide.MULTIPLE_ANALYSES.equals(lifespan) || "INSTANCE".equals(lifespan)) {
-        return ContainerLifespan.INSTANCE;
-      }
-      if ("MODULE".equals(lifespan)) {
-        return ContainerLifespan.MODULE;
-      }
-      if (SonarLintSide.SINGLE_ANALYSIS.equals(lifespan)) {
-        return ContainerLifespan.ANALYSIS;
-      }
+    public AnalysisExtensionInstaller(
+        SonarLintRuntime sonarRuntime,
+        LoadedPlugins loadedPlugins,
+        Configuration bootConfiguration,
+        AnalysisEngineConfiguration analysisEngineConfig
+    ) {
+        super(sonarRuntime, bootConfiguration);
+        this.loadedPlugins = loadedPlugins;
+        enabledLanguages = analysisEngineConfig.getEnabledLanguages();
     }
-    return null;
-  }
 
-  private boolean onlySonarSourceSensor(String pluginKey, Object extension) {
-    // SLCORE-259
-    if (!enabledLanguages.contains(Language.TS) && className(extension).contains("TypeScriptSensor")) {
-      LOG.debug("TypeScript sensor excluded");
-      return false;
+    public AnalysisExtensionInstaller install(
+        ExtensionContainer container,
+        ContainerLifespan lifespan
+    ) {
+        // ???
+        // System.out.printf("--- lifespan: %s\n", lifespan.toString());
+        super.install(
+            container,
+            loadedPlugins.getPluginInstancesByKeys(),
+            (pluginKey, extension) -> {
+                return lifespan.equals(getSonarLintSideLifespan(extension))
+                    && onlySonarSourceSensor(pluginKey, extension);
+            }
+        );
+        return this;
     }
-    return Language.containsPlugin(pluginKey) || isNotSensor(extension);
-  }
 
-  private static boolean isNotSensor(Object extension) {
-    return !ExtensionUtils.isType(extension, Sensor.class);
-  }
+    private static ContainerLifespan getSonarLintSideLifespan(Object extension) {
+        var annotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
+        if (annotation != null) {
+            var lifespan = annotation.lifespan();
+            if (SonarLintSide.MULTIPLE_ANALYSES.equals(lifespan) || "INSTANCE".equals(lifespan)) {
+                return ContainerLifespan.INSTANCE;
+            }
+            if ("MODULE".equals(lifespan)) { // plugin中只有MULTIPLE_ANALYSES,SINGLE_ANALYSIS可用 ???
+                return ContainerLifespan.MODULE;
+            }
+            if (SonarLintSide.SINGLE_ANALYSIS.equals(lifespan)) {
+                return ContainerLifespan.ANALYSIS;
+            }
+        }
+        return null;
+    }
 
-  private static String className(Object extension) {
-    return extension instanceof Class ? ((Class) extension).getName() : extension.getClass().getName();
-  }
+    private boolean onlySonarSourceSensor(String pluginKey, Object extension) {
+        // SLCORE-259
+        if (!enabledLanguages.contains(Language.TS) && className(extension).contains("TypeScriptSensor")) {
+            LOG.debug("TypeScript sensor excluded");
+            return false;
+        }
+        // return Language.containsPlugin(pluginKey) || isNotSensor(extension);
+        return true; // ???
+    }
+
+    private static boolean isNotSensor(Object extension) {
+        return !ExtensionUtils.isType(extension, Sensor.class);
+    }
+
+    private static String className(Object extension) {
+        return extension instanceof Class
+            ? ((Class) extension).getName()
+            : extension.getClass().getName();
+    }
 
 }

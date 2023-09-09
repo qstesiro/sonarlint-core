@@ -26,25 +26,28 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 
 public class RuleSet {
-  private final Collection<ServerActiveRule> rules;
-  private final Map<String, ServerActiveRule> rulesByKey;
-  private final String lastModified;
 
-  public RuleSet(Collection<ServerActiveRule> rules, String lastModified) {
-    this.rules = rules;
-    this.rulesByKey = rules.stream().collect(Collectors.toMap(ServerActiveRule::getRuleKey, Function.identity()));
-    this.lastModified = lastModified;
-  }
+    private final Collection<ServerActiveRule> rules;
+    private final Map<String, ServerActiveRule> rulesByKey;
+    private final String lastModified;
 
-  public Collection<ServerActiveRule> getRules() {
-    return rules;
-  }
+    public RuleSet(Collection<ServerActiveRule> rules, String lastModified) {
+        this.rules = rules;
+        this.rulesByKey = rules.stream().collect(
+            Collectors.toMap(ServerActiveRule::getRuleKey, Function.identity())
+        );
+        this.lastModified = lastModified;
+    }
 
-  public Map<String, ServerActiveRule> getRulesByKey() {
-    return rulesByKey;
-  }
+    public Collection<ServerActiveRule> getRules() {
+        return rules;
+    }
 
-  public String getLastModified() {
-    return lastModified;
-  }
+    public Map<String, ServerActiveRule> getRulesByKey() {
+        return rulesByKey;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
 }

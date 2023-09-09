@@ -31,45 +31,45 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 public class RulesDefinitionExtractor {
 
-  public List<SonarLintRuleDefinition> extractRules(Map<String, Plugin> pluginInstancesByKeys, Set<Language> enabledLanguages,
-    boolean includeTemplateRules, boolean includeSecurityHotspots) {
-    Context context;
-    try {
-      var container = new RulesDefinitionExtractorContainer(pluginInstancesByKeys);
-      container.execute();
-      context = container.getRulesDefinitionContext();
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to extract rules metadata", e);
-    }
-
-    List<SonarLintRuleDefinition> rules = new ArrayList<>();
-
-    for (RulesDefinition.Repository repoDef : context.repositories()) {
-      if (repoDef.isExternal()) {
-        continue;
-      }
-      var repoLanguage = Language.forKey(repoDef.language());
-      if (repoLanguage.isEmpty() || !enabledLanguages.contains(repoLanguage.get())) {
-        continue;
-      }
-      for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
-        if (shouldIgnoreAsHotspot(includeSecurityHotspots, ruleDef) || shouldIgnoreAsTemplate(includeTemplateRules, ruleDef)) {
-          continue;
+    public List<SonarLintRuleDefinition> extractRules(
+        Map<String, Plugin> pluginInstancesByKeys,
+        Set<Language> enabledLanguages,
+        boolean includeTemplateRules,
+        boolean includeSecurityHotspots
+    ) {
+        Context context;
+        try {
+            var container = new RulesDefinitionExtractorContainer(pluginInstancesByKeys);
+            container.execute(); // 注册extensions并执行RuleDefinition.define定义规则
+            context = container.getRulesDefinitionContext(); // 多个插件的规则增添到一个context中
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to extract rules metadata", e);
         }
-        rules.add(new SonarLintRuleDefinition(ruleDef));
-      }
+        List<SonarLintRuleDefinition> rules = new ArrayList<>();
+        for (RulesDefinition.Repository repoDef : context.repositories()) { // 过滤掉部分不需要的规则
+            if (repoDef.isExternal()) {
+                continue;
+            }
+            var repoLanguage = Language.forKey(repoDef.language());
+            if (repoLanguage.isEmpty() || !enabledLanguages.contains(repoLanguage.get())) {
+                continue;
+            }
+            for (RulesDefinition.Rule ruleDef : repoDef.rules()) {
+                if (shouldIgnoreAsHotspot(includeSecurityHotspots, ruleDef) ||
+                    shouldIgnoreAsTemplate(includeTemplateRules, ruleDef)) {
+                    continue;
+                }
+                rules.add(new SonarLintRuleDefinition(ruleDef));
+            }
+        }
+        return rules;
     }
 
-    return rules;
+    private static boolean shouldIgnoreAsTemplate(boolean includeTemplateRules, RulesDefinition.Rule ruleDef) {
+        return ruleDef.template() && !includeTemplateRules;
+    }
 
-  }
-
-  private static boolean shouldIgnoreAsTemplate(boolean includeTemplateRules, RulesDefinition.Rule ruleDef) {
-    return ruleDef.template() && !includeTemplateRules;
-  }
-
-  private static boolean shouldIgnoreAsHotspot(boolean hotspotsEnabled, RulesDefinition.Rule ruleDef) {
-    return ruleDef.type() == RuleType.SECURITY_HOTSPOT && !hotspotsEnabled;
-  }
-
+    private static boolean shouldIgnoreAsHotspot(boolean hotspotsEnabled, RulesDefinition.Rule ruleDef) {
+        return ruleDef.type() == RuleType.SECURITY_HOTSPOT && !hotspotsEnabled;
+    }
 }

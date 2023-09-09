@@ -26,57 +26,62 @@ import org.sonar.api.rule.RuleKey;
 
 public class ActiveRuleAdapter implements ActiveRule {
 
-  private final org.sonarsource.sonarlint.core.analysis.api.ActiveRule activeRule;
+    private final org.sonarsource.sonarlint.core.analysis.api.ActiveRule activeRule;
 
-  public ActiveRuleAdapter(org.sonarsource.sonarlint.core.analysis.api.ActiveRule activeRule) {
-    this.activeRule = activeRule;
-  }
-
-  @Override
-  public RuleKey ruleKey() {
-    return RuleKey.parse(activeRule.getRuleKey());
-  }
-
-  @Override
-  public String severity() {
-    throw new UnsupportedOperationException("severity not supported in SonarLint");
-  }
-
-  @Override
-  public String language() {
-    return activeRule.getLanguageKey();
-  }
-
-  @Override
-  public String param(String key) {
-    return params().get(key);
-  }
-
-  @Override
-  public Map<String, String> params() {
-    return activeRule.getParams();
-  }
-
-  @Override
-  public String internalKey() {
-    // This is a hack for old versions of CFamily (https://github.com/SonarSource/sonar-cpp/pull/1598)
-    return ruleKey().rule();
-  }
-
-  @Override
-  public String templateRuleKey() {
-    var templateRuleKey = activeRule.getTemplateRuleKey();
-    if (!StringUtils.isEmpty(templateRuleKey)) {
-      // The SQ plugin API expect template rule key to be only the "rule" part of the key (without the repository key)
-      var ruleKey = RuleKey.parse(templateRuleKey);
-      return ruleKey.rule();
+    public ActiveRuleAdapter(org.sonarsource.sonarlint.core.analysis.api.ActiveRule activeRule) {
+        this.activeRule = activeRule;
     }
-    return null;
-  }
 
-  @Override
-  public String qpKey() {
-    throw new UnsupportedOperationException("qpKey not supported in SonarLint");
-  }
+    @Override
+    public RuleKey ruleKey() {
+        return RuleKey.parse(activeRule.getRuleKey());
+    }
 
+    @Override
+    public String severity() {
+        // throw new UnsupportedOperationException("severity not supported in SonarLint");
+        return activeRule.getSeverity();
+    }
+
+    @Override
+    public String language() {
+        return activeRule.getLanguageKey();
+    }
+
+    @Override
+    public String param(String key) {
+        return params().get(key);
+    }
+
+    @Override
+    public Map<String, String> params() {
+        return activeRule.getParams();
+    }
+
+    @Override
+    public String internalKey() {
+        // This is a hack for old versions of CFamily
+        // (https://github.com/SonarSource/sonar-cpp/pull/1598)
+        // return ruleKey().rule(); // 源代码
+        return activeRule.getInternalKey() != ""
+            ? activeRule.getInternalKey()
+            : ruleKey().rule();
+    }
+
+    @Override
+    public String templateRuleKey() {
+        var templateRuleKey = activeRule.getTemplateRuleKey();
+        if (!StringUtils.isEmpty(templateRuleKey)) {
+            // The SQ plugin API expect template rule key to be only
+            // the "rule" part of the key (without the repository key)
+            var ruleKey = RuleKey.parse(templateRuleKey);
+            return ruleKey.rule();
+        }
+        return null;
+    }
+
+    @Override
+    public String qpKey() {
+        throw new UnsupportedOperationException("qpKey not supported in SonarLint");
+    }
 }

@@ -22,19 +22,20 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.util.Map;
 
 public class AnalyzerConfiguration {
-  private final Settings settings;
-  private final Map<String, RuleSet> ruleSetByLanguageKey;
 
-  public AnalyzerConfiguration(Settings settings, Map<String, RuleSet> ruleSetByLanguageKey) {
-    this.settings = settings;
-    this.ruleSetByLanguageKey = ruleSetByLanguageKey;
-  }
+    private final Settings settings;
+    private final Map<String, RuleSet> ruleSetByLanguageKey;
 
-  public Settings getSettings() {
-    return settings;
-  }
+    public AnalyzerConfiguration(Settings settings, Map<String, RuleSet> ruleSetByLanguageKey) {
+        this.settings = settings;
+        this.ruleSetByLanguageKey = ruleSetByLanguageKey;
+    }
 
-  public Map<String, RuleSet> getRuleSetByLanguageKey() {
-    return ruleSetByLanguageKey;
-  }
+    public Settings getSettings() {
+        return settings;
+    }
+
+    public Map<String, RuleSet> getRuleSetByLanguageKey() {
+        return ruleSetByLanguageKey;
+    }
 }

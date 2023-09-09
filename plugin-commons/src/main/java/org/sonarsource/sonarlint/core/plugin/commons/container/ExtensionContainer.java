@@ -23,6 +23,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 public interface ExtensionContainer extends Container {
+
   ExtensionContainer addExtension(@Nullable String pluginKey, Object extension);
 
   ExtensionContainer declareProperties(Object extension);
