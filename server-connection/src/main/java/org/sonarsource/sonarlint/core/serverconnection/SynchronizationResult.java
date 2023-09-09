@@ -20,13 +20,14 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 public class SynchronizationResult {
-  private final boolean analyzerUpdated;
 
-  public SynchronizationResult(boolean analyzerUpdated) {
-    this.analyzerUpdated = analyzerUpdated;
-  }
+    private final boolean analyzerUpdated;
 
-  public boolean hasAnalyzerBeenUpdated() {
-    return analyzerUpdated;
-  }
+    public SynchronizationResult(boolean analyzerUpdated) {
+        this.analyzerUpdated = analyzerUpdated;
+    }
+
+    public boolean hasAnalyzerBeenUpdated() {
+        return analyzerUpdated;
+    }
 }

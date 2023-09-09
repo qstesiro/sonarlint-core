@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.batch.fs.InputFile.Type;
@@ -497,6 +498,10 @@ public final class ConnectedSonarLintEngineImpl
         Set<String> projectKeys,
         @Nullable ClientProgressMonitor monitor
     ) {
+        // ???
+        Stream.of(Thread.currentThread().getStackTrace()).forEach(
+            e -> out.printf("--- %s\n", e)
+        );
         var result = serverConnection.sync(
             endpoint, client, projectKeys, new ProgressMonitor(monitor)
         );
