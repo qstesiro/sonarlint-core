@@ -28,6 +28,10 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
@@ -50,22 +54,15 @@ import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-// import org.sonar.api.utils.log.Logger;
-// import org.sonar.api.utils.log.Loggers;
-import java.util.logging.Logger;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
-
-import static java.lang.System.out;
 
 public final class StandaloneSonarLintEngineImpl
     extends AbstractSonarLintEngine
     implements StandaloneSonarLintEngine {
 
-    // static final Logger log = Loggers.get(StandaloneSonarLintEngineImpl.class);
-    // static final SonarLintLogger LOG = SonarLintLogger.get();
-    static final Logger log = Logger.getLogger(StandaloneSonarLintEngineImpl.class.getName());
+    private static final Logger log = Loggers.get(StandaloneSonarLintEngineImpl.class);
 
     private final Collection<PluginDetails> pluginDetails;
     private final Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
@@ -74,13 +71,11 @@ public final class StandaloneSonarLintEngineImpl
     public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
         super(globalConfig.getLogOutput());
         setLogging(null);
-        out.println("--- StandaloneSonarLintEngineImpl.StandaloneSonarLintEngineImpl"); // ???
         var loadingResult = loadPlugins(globalConfig);
-        // ???
         var map = loadingResult.getLoadedPlugins().getPluginInstancesByKeys();
-        out.printf("loaded plugin count: %d\n", map.size());
+        log.debug("loaded plugin count: {}", map.size());
         for (var entry : map.entrySet()) {
-            out.printf("loaded plugin: %s\n", entry.getKey());
+            log.debug("loaded plugin: {}", entry.getKey());
         }
         pluginDetails = loadingResult
             .getPluginCheckResultByKeys()
@@ -100,9 +95,8 @@ public final class StandaloneSonarLintEngineImpl
             globalConfig.getEnabledLanguages(),
             false, false
         );
-        // ???
         for (var e : allRulesDefinitionsByKey.entrySet()) {
-            out.printf("--- rule key: %s\n", e.getKey());
+            log.debug("rule key: {}", e.getKey());
         }
         var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
             .addEnabledLanguages(globalConfig.getEnabledLanguages())
@@ -164,7 +158,7 @@ public final class StandaloneSonarLintEngineImpl
             configuration.moduleKey(),
             analysisConfig,
             issue -> {
-                out.printf("--- issue: %s\n", issue.getRuleKey());
+                log.debug("issue: {}", issue.getRuleKey());
                 issueListener.handle(
                     new DefaultClientIssue(
                         issue, allRulesDefinitionsByKey.get(issue.getRuleKey())
@@ -206,10 +200,9 @@ public final class StandaloneSonarLintEngineImpl
                     return activeRule;
                 }
             ).collect(Collectors.toList());
-        // ???
-        out.printf("--- ActiveRuleCount: %s\n", lst.size());
+        log.debug("--- ActiveRuleCount: {}", lst.size());
         for (var e : lst) {
-            out.printf("--- ActiveRule: %s\n", e.getRuleKey());
+            log.debug("ActiveRule: {}", e.getRuleKey());
         }
         return lst;
     }

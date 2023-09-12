@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.sonar.api.utils.log.Loggers;
+import org.sonar.api.utils.log.Logger;
+
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -33,11 +37,10 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 
-import static java.lang.System.out;
-
 public class PluginsSynchronizer {
 
     private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final Logger log = Loggers.get(PluginsSynchronizer.class);
 
     private final Set<String> sonarSourceDisabledPluginKeys;
     private final PluginsStorage pluginsStorage;
@@ -57,10 +60,9 @@ public class PluginsSynchronizer {
     public boolean synchronize(ServerApi serverApi, ProgressMonitor progressMonitor) {
         var storedPluginsByKey = pluginsStorage.getStoredPluginsByKey();
         var serverPlugins = serverApi.plugins().getInstalled();
-        // ???
         serverPlugins.stream().forEach(
-            e -> out.printf(
-                "--- plugin - key: %s, fileName: %s, lintSupported: %b\n",
+            e -> log.debug(
+                "plugin - key: {}, fileName: {}, lintSupported: {}",
                 e.getKey(),
                 e.getFilename(),
                 e.isSonarLintSupported()
@@ -70,10 +72,9 @@ public class PluginsSynchronizer {
             .stream()
             .filter(p -> shouldDownload(p, storedPluginsByKey))
             .collect(Collectors.toList());
-        // ???
         pluginsToDownload.stream().forEach(
-            e -> out.printf(
-                "--- download - key: %s, fileName: %s, lintSupported: %b\n",
+            e -> log.debug(
+                "download - key: {}, fileName: {}, lintSupported: {}",
                 e.getKey(),
                 e.getFilename(),
                 e.isSonarLintSupported()
@@ -108,8 +109,8 @@ public class PluginsSynchronizer {
 
     private boolean shouldDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
         if (embeddedPluginKeys.contains(serverPlugin.getKey())) {
-            out.printf(
-                "[SYNC] Code analyzer '%s' is embedded in SonarLint. Skip downloading it.\n",
+            log.debug(
+                "[SYNC] Code analyzer '{}' is embedded in SonarLint. Skip downloading it.",
                 serverPlugin.getKey()
             );
             LOG.debug(
@@ -119,8 +120,8 @@ public class PluginsSynchronizer {
             return false;
         }
         if (upToDate(serverPlugin, storedPluginsByKey)) {
-            out.printf(
-                "[SYNC] Code analyzer '%s' is up-to-date. Skip downloading it.\n",
+            log.debug(
+                "[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.",
                 serverPlugin.getKey()
             );
             LOG.debug(
@@ -130,8 +131,8 @@ public class PluginsSynchronizer {
             return false;
         }
         if (!serverPlugin.isSonarLintSupported()) {
-            out.printf(
-                "[SYNC] Code analyzer '%s' does not support SonarLint. Skip downloading it.\n",
+            log.debug(
+                "[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.",
                 serverPlugin.getKey()
             );
             LOG.debug(
@@ -141,9 +142,9 @@ public class PluginsSynchronizer {
             return false;
         }
         if (sonarSourceDisabledPluginKeys.contains(serverPlugin.getKey())) {
-            out.printf(
-                "[SYNC] Code analyzer '%s' is disabled in SonarLint (language not enabled). " +
-                "Skip downloading it.\n",
+            log.debug(
+                "[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). " +
+                "Skip downloading it.",
                 serverPlugin.getKey()
             );
             LOG.debug(
@@ -156,10 +157,20 @@ public class PluginsSynchronizer {
         var pluginVersion = VersionUtils.getJarVersion(serverPlugin.getFilename());
         if (!pluginsMinVersions.isVersionSupported(serverPlugin.getKey(), pluginVersion)) {
             var minimumVersion = pluginsMinVersions.getMinimumVersion(serverPlugin.getKey());
+            log.debug(
+                "[SYNC] Code analyzer '{}' version '{}' is not supported (minimal version is '{}'). " +
+                "Skip downloading it.",
+                serverPlugin.getKey(),
+                pluginVersion,
+                minimumVersion
+            );
             LOG.debug(
                 "[SYNC] Code analyzer '{}' version '{}' is not supported (minimal version is '{}'). " +
                 "Skip downloading it.",
-                serverPlugin.getKey(), pluginVersion, minimumVersion);
+                serverPlugin.getKey(),
+                pluginVersion,
+                minimumVersion
+            );
             return false;
         }
         return true;

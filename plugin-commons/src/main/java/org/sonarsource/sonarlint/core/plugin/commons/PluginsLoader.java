@@ -25,9 +25,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
@@ -38,14 +40,13 @@ import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginRequirem
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
-import static java.lang.System.out;
-
 /**
  * Orchestrates the loading and instantiation of plugins
  */
 public class PluginsLoader {
 
-    private static final Logger LOG = Loggers.get(PluginsLoader.class);
+    private static final Logger log = Loggers.get(PluginsLoader.class);
+
     private final SonarPluginRequirementsChecker requirementsChecker = new SonarPluginRequirementsChecker();
 
     public static class Configuration {
@@ -79,11 +80,11 @@ public class PluginsLoader {
             System2.INSTANCE.property("java.specification.version"),
             "Missing Java property 'java.specification.version'"
         );
-        for (var e : configuration.pluginJarLocations) { // ???
-            out.printf("--- plugin location: %s\n", e.toString());
+        for (var e : configuration.pluginJarLocations) {
+            log.debug("plugin location: {}", e.toString());
         }
-        for (var e : configuration.enabledLanguages) { // ???
-            out.printf("--- enabled language: %s\n", e.toString());
+        for (var e : configuration.enabledLanguages) {
+            log.debug("enabled language: {}", e.toString());
         }
         var pluginCheckResultByKeys = requirementsChecker.checkRequirements(
             configuration.pluginJarLocations,
@@ -92,13 +93,13 @@ public class PluginsLoader {
             configuration.shouldCheckNodeVersion,
             configuration.nodeCurrentVersion
         );
-        for (var e : pluginCheckResultByKeys.entrySet()) { // ???
-            out.printf("check plugin: %s\n", e.getKey());
+        for (var e : pluginCheckResultByKeys.entrySet()) {
+            log.debug("check plugin: {}", e.getKey());
         }
         var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
         logPlugins(nonSkippedPlugins);
-        for (var e : nonSkippedPlugins) { // ???
-            out.printf("nonskiped plugin: %s\n", e.getKey());
+        for (var e : nonSkippedPlugins) {
+            log.debug("nonskiped plugin: {}", e.getKey());
         }
         var instancesLoader = new PluginInstancesLoader();
         var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
@@ -109,19 +110,19 @@ public class PluginsLoader {
     }
 
     private static void logPlugins(Collection<PluginInfo> nonSkippedPlugins) {
-        LOG.debug("Loaded {} plugins", nonSkippedPlugins.size());
+        log.debug("Loaded {} plugins", nonSkippedPlugins.size());
         for (PluginInfo p : nonSkippedPlugins) {
-            LOG.debug("  * {} {} ({})", p.getName(), p.getVersion(), p.getKey());
+            log.debug("  * {} {} ({})", p.getName(), p.getVersion(), p.getKey());
         }
     }
 
     private static Collection<PluginInfo> getNonSkippedPlugins(
         Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys
     ) {
-        for (var e : pluginCheckResultByKeys.entrySet()) { // ???
+        for (var e : pluginCheckResultByKeys.entrySet()) {
             if (e.getValue().isSkipped()) {
-                out.printf(
-                    "--- skip plugin %s reason: %s\n",
+                log.debug(
+                    "skip plugin {} reason: {}",
                     e.getKey(),
                     e.getValue()
                         .getSkipReason()

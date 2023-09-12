@@ -23,18 +23,21 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiPredicate;
 import java.util.stream.Stream;
+
 import org.sonar.api.Plugin;
 import org.sonar.api.config.Configuration;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.container.ExtensionContainer;
 import org.sonarsource.sonarlint.core.plugin.commons.sonarapi.PluginContextImpl;
 import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
-import static java.lang.System.out;
-
 public class ExtensionInstaller {
 
     private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final Logger log = Loggers.get(ExtensionInstaller.class);
 
     private final SonarLintRuntime sonarRuntime;
     private final Configuration bootConfiguration;
@@ -72,15 +75,10 @@ public class ExtensionInstaller {
         Plugin.Context context,
         BiPredicate<String, Object> extensionFilter
     ) {
-        // // ???
-        // Stream.of(Thread.currentThread().getStackTrace())
-        //     .forEach(e -> out.printf("--- ExtensionInstaller.loadExtensions - %s\n", e));
         for (Object extension : context.getExtensions()) {
-            // // ???
-            // out.printf( "--- extension class: %s\n", getClassName(extension));
+            log.debug( "extension class: {}", getClassName(extension));
             if (extensionFilter.test(pluginKey, extension)) {
-                // // ???
-                // out.printf( "--- added extension class: %s\n", getClassName(extension));
+                log.debug( "added extension class: {}", getClassName(extension));
                 container.addExtension(pluginKey, extension);
             }
         }

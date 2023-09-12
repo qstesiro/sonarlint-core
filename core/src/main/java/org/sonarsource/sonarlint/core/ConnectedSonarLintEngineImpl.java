@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.http.HttpClient;
+// import org.sonarsource.sonarlint.core.commons.log.Logger;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -89,11 +90,16 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 
+import org.sonar.api.utils.log.Loggers;
+import org.sonar.api.utils.log.Logger;
+
 import static java.lang.System.out;
 
 public final class ConnectedSonarLintEngineImpl
     extends AbstractSonarLintEngine
     implements ConnectedSonarLintEngine {
+
+    private final static Logger log = Loggers.get(ConnectedSonarLintEngineImpl.class);
 
     private final ConnectedGlobalConfiguration globalConfig;
     private final ServerConnection serverConnection;
@@ -101,7 +107,7 @@ public final class ConnectedSonarLintEngineImpl
 
     public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
         super(globalConfig.getLogOutput());
-        out.println("--- ConnectedSonarLintEngineImpl.ConnectedSonarLintEngineImpl"); // ???
+        log.debug("ConnectedSonarLintEngineImpl.ConnectedSonarLintEngineImpl");
         this.globalConfig = globalConfig;
         serverConnection = new ServerConnection(
             globalConfig.getStorageRoot(),
@@ -126,11 +132,10 @@ public final class ConnectedSonarLintEngineImpl
 
     private AnalysisContext loadAnalysisContext() {
         var loadingResult = loadPlugins();
-        // ???
         var map = loadingResult.getLoadedPlugins().getPluginInstancesByKeys();
-        out.printf("--- loaded plugin count: %d\n", map.size());
+        log.debug("loaded plugin count: {}", map.size());
         for (var entry : map.entrySet()) {
-            out.printf("--- loaded plugin: %s\n", entry.getKey());
+            log.debug("loaded plugin: {}", entry.getKey());
         }
         var pluginDetails = loadingResult
             .getPluginCheckResultByKeys()
@@ -144,11 +149,10 @@ public final class ConnectedSonarLintEngineImpl
                     p.getSkipReason().orElse(null)
                 )
             ).collect(Collectors.toList());
-        // ???
-        out.printf("--- plugin detail count: %d\n", pluginDetails.size());
+        log.debug("plugin detail count: {}", pluginDetails.size());
         for (var e : pluginDetails) {
-            out.printf(
-                "--- plugin detail: %s, skip: %s\n",
+            log.debug(
+                "plugin detail: {}, skip: {}",
                 e.key(),
                 e.skipReason().orElse(new SkipReason.None())
             );
@@ -161,16 +165,15 @@ public final class ConnectedSonarLintEngineImpl
             true,
             globalConfig.isHotspotsEnabled()
         );
-        // // ???
-        out.printf("--- rule total: %d\n", allRulesDefinitionsByKey.size());
-        // for (var e : allRulesDefinitionsByKey.entrySet()) {
-        //     out.printf("--- rule\n");
-        //     out.printf("    key: %s\n", e.getValue().getKey());
-        //     out.printf("    internalKey: %s\n", e.getValue().getInternalKey());
-        //     out.printf("    name: %s\n", e.getValue().getName());
-        //     out.printf("    type: %s\n", e.getValue().getType().name());
-        //     out.printf("    language: %s\n", e.getValue().getLanguage().getLanguageKey());
-        // }
+        log.debug("rule total: {}", allRulesDefinitionsByKey.size());
+        for (var e : allRulesDefinitionsByKey.entrySet()) {
+            log.debug("rule:");
+            log.debug("    key: {}", e.getValue().getKey());
+            log.debug("    internalKey: {}", e.getValue().getInternalKey());
+            log.debug("    name: {}", e.getValue().getName());
+            log.debug("    type: {}", e.getValue().getType().name());
+            log.debug("    language: {}", e.getValue().getLanguage().getLanguageKey());
+        }
         var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
             .addEnabledLanguages(globalConfig.getEnabledLanguages())
             .setClientPid(globalConfig.getClientPid())
@@ -192,20 +195,17 @@ public final class ConnectedSonarLintEngineImpl
         Map<String, Path> pluginsToLoadByKey = new HashMap<>();
         // order is important as e.g. embedded takes precedence over stored
         pluginsToLoadByKey.putAll(globalConfig.getExtraPluginsPathsByKey());
-        // ???
         for (var e : globalConfig.getExtraPluginsPathsByKey().entrySet()) {
-            out.printf("--- extra plugin path: %s\n", e.getValue().toString());
+            log.debug("extra plugin path: {}", e.getValue().toString());
         }
         pluginsToLoadByKey.putAll(serverConnection.getStoredPluginPathsByKey());
-        // ???
         for (var e : serverConnection.getStoredPluginPathsByKey().entrySet()) {
-            out.printf("--- stored plugin path: %s\n", e.getValue().toString());
+            log.debug("stored plugin path: {}", e.getValue().toString());
         }
         // 本地会覆盖服务器下载的插件 ???
         pluginsToLoadByKey.putAll(globalConfig.getEmbeddedPluginPathsByKey());
-        // ???
         for (var e : globalConfig.getEmbeddedPluginPathsByKey().entrySet()) {
-            out.printf("--- embedded plugin path: %s\n", e.getValue().toString());
+            log.debug("embedded plugin path: {}", e.getValue().toString());
         }
         Set<Path> plugins = new HashSet<>(pluginsToLoadByKey.values());
         var config = new Configuration(
@@ -319,17 +319,16 @@ public final class ConnectedSonarLintEngineImpl
         analysisConfigBuilder.putAllExtraProperties(globalConfig.extraProperties());
         var activeRulesContext = buildActiveRulesContext(configuration);
         if (activeRulesContext.activeRules.isEmpty()) {
-            out.println("--- Skipping analysis, no synchronization has been made with the server");
+            log.debug("Skipping analysis, no synchronization has been made with the server");
             LOG.info("Skipping analysis, no synchronization has been made with the server");
             return new AnalysisResults();
         }
-        // ???
-        out.printf("--- active rule total: %d\n", activeRulesContext.activeRules.size());
+        log.debug("active rule total: {}", activeRulesContext.activeRules.size());
         activeRulesContext.activeRules.stream().forEach(
             e -> {
                 var metadata = activeRulesContext.activeRulesMetadata.get(e.getRuleKey());
-                out.printf(
-                    "--- key: %s, lang: %s, severity: %s, type: %s\n",
+                log.debug(
+                    "key: {}, lang: {}, severity: {}, type: {}",
                     e.getRuleKey(),
                     e.getLanguageKey(),
                     metadata.severity.name(),
@@ -498,10 +497,6 @@ public final class ConnectedSonarLintEngineImpl
         Set<String> projectKeys,
         @Nullable ClientProgressMonitor monitor
     ) {
-        // ???
-        Stream.of(Thread.currentThread().getStackTrace()).forEach(
-            e -> out.printf("--- %s\n", e)
-        );
         var result = serverConnection.sync(
             endpoint, client, projectKeys, new ProgressMonitor(monitor)
         );

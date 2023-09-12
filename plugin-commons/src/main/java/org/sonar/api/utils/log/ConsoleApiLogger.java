@@ -19,15 +19,15 @@
  */
 package org.sonar.api.utils.log;
 
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.log.SonarConsoleLogger;
 
 /**
  * This class can't be moved to another package because {@link BaseLogger} is not public.
  * And we have to extend BaseLogger to please {@link DefaultProfiler}.
  */
-public class SonarApiLogger extends BaseLogger {
+public class ConsoleApiLogger extends BaseLogger {
 
-    private static final SonarLintLogger logger = SonarLintLogger.get();
+    private final static SonarConsoleLogger logger = new SonarConsoleLogger();
 
     @Override
     public boolean isTraceEnabled() {
@@ -58,92 +58,128 @@ public class SonarApiLogger extends BaseLogger {
 
     @Override
     public void doDebug(String msg) {
-        logger.debug(msg);
+        if (getLevel().ordinal() <= LoggerLevel.DEBUG.ordinal()) {
+            logger.debug(msg);
+        }
     }
 
     @Override
     public void doDebug(String pattern, Object arg) {
-        logger.debug(pattern, arg);
+        if (getLevel().ordinal() <= LoggerLevel.DEBUG.ordinal()) {
+            logger.debug(pattern, arg);
+        }
     }
 
     @Override
     public void doDebug(String msg, Object arg1, Object arg2) {
-        logger.debug(msg, arg1, arg2);
+        if (getLevel().ordinal() <= LoggerLevel.DEBUG.ordinal()) {
+            logger.debug(msg, arg1, arg2);
+        }
     }
 
     @Override
     public void doDebug(String msg, Object... args) {
-        logger.debug(msg, args);
+        if (getLevel().ordinal() <= LoggerLevel.DEBUG.ordinal()) {
+            logger.debug(msg, args);
+        }
     }
 
     @Override
     public void doInfo(String msg) {
-        logger.info(msg);
+        if (getLevel().ordinal() <= LoggerLevel.INFO.ordinal()) {
+            logger.info(msg);
+        }
     }
 
     @Override
     public void doInfo(String msg, Object arg) {
-        logger.info(msg, arg);
+        if (getLevel().ordinal() <= LoggerLevel.INFO.ordinal()) {
+            logger.info(msg, arg);
+        }
     }
 
     @Override
     public void doInfo(String msg, Object arg1, Object arg2) {
-        logger.info(msg, arg1, arg2);
+        if (getLevel().ordinal() <= LoggerLevel.INFO.ordinal()) {
+            logger.info(msg, arg1, arg2);
+        }
     }
 
     @Override
     public void doInfo(String msg, Object... args) {
-        logger.info(msg, args);
+        if (getLevel().ordinal() <= LoggerLevel.INFO.ordinal()) {
+            logger.info(msg, args);
+        }
     }
 
     @Override
     public void doWarn(String msg) {
-        logger.warn(msg);
+        if (getLevel().ordinal() <= LoggerLevel.INFO.ordinal()) {
+            logger.warn(msg);
+        }
     }
 
     @Override
-    public void doWarn(String msg, Throwable throwable) {
-        logger.warn(msg, throwable);
+    public void doWarn(String msg, Throwable throwable) { // 未使用throwable
+        if (getLevel().ordinal() <= LoggerLevel.WARN.ordinal()) {
+            logger.warn(msg);
+        }
     }
 
     @Override
     public void doWarn(String msg, Object arg) {
-        logger.warn(msg, arg);
+        if (getLevel().ordinal() <= LoggerLevel.WARN.ordinal()) {
+            logger.warn(msg, arg);
+        }
     }
 
     @Override
     public void doWarn(String msg, Object arg1, Object arg2) {
-        logger.warn(msg, arg1, arg2);
+        if (getLevel().ordinal() <= LoggerLevel.WARN.ordinal()) {
+            logger.warn(msg, arg1, arg2);
+        }
     }
 
     @Override
     public void doWarn(String msg, Object... args) {
-        logger.warn(msg, args);
+        if (getLevel().ordinal() <= LoggerLevel.WARN.ordinal()) {
+            logger.warn(msg, args);
+        }
     }
 
     @Override
     public void doError(String msg) {
-        logger.error(msg);
+        if (getLevel().ordinal() <= LoggerLevel.ERROR.ordinal()) {
+            logger.error(msg);
+        }
     }
 
     @Override
     public void doError(String msg, Object arg) {
-        logger.error(msg, arg);
+        if (getLevel().ordinal() <= LoggerLevel.ERROR.ordinal()) {
+            logger.error(msg, arg);
+        }
     }
 
     @Override
     public void doError(String msg, Object arg1, Object arg2) {
-        logger.error(msg, arg1, arg2);
+        if (getLevel().ordinal() <= LoggerLevel.ERROR.ordinal()) {
+            logger.error(msg, arg1, arg2);
+        }
     }
 
     @Override
     public void doError(String msg, Object... args) {
-        logger.error(msg, args);
+        if (getLevel().ordinal() <= LoggerLevel.ERROR.ordinal()) {
+            logger.error(msg, args);
+        }
     }
 
     @Override
-    public void doError(String msg, Throwable thrown) {
-        logger.error(msg, thrown);
+    public void doError(String msg, Throwable thrown) { // 未使用throwable
+        if (getLevel().ordinal() <= LoggerLevel.ERROR.ordinal()) {
+            logger.error(msg);
+        }
     }
 
     @Override
@@ -153,7 +189,8 @@ public class SonarApiLogger extends BaseLogger {
 
     @Override
     public LoggerLevel getLevel() {
-        return LoggerLevel.DEBUG;
+        // return LoggerLevel.DEBUG;
+        return LoggerLevel.INFO;
     }
 
 }

@@ -25,29 +25,29 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput.Level;
 
 class LogOutputDelegator {
-  private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
-  void log(String formattedMessage, Level level) {
-    var output = target.get();
-    if (output != null) {
-      output.log(formattedMessage, level);
-    }
-  }
+    private final InheritableThreadLocal<ClientLogOutput> target = new InheritableThreadLocal<>();
 
-  void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
-    if (formattedMessage != null) {
-      log(formattedMessage, level);
+    void log(String formattedMessage, Level level) {
+        var output = target.get();
+        if (output != null) {
+            output.log(formattedMessage, level);
+        }
     }
 
-    if (t != null) {
-      var stringWriter = new StringWriter();
-      var printWriter = new PrintWriter(stringWriter);
-      t.printStackTrace(printWriter);
-      log(stringWriter.toString(), level);
+    void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
+        if (formattedMessage != null) {
+            log(formattedMessage, level);
+        }
+        if (t != null) {
+            var stringWriter = new StringWriter();
+            var printWriter = new PrintWriter(stringWriter);
+            t.printStackTrace(printWriter);
+            log(stringWriter.toString(), level);
+        }
     }
-  }
 
-  void setTarget(@Nullable ClientLogOutput target) {
-    this.target.set(target);
-  }
+    void setTarget(@Nullable ClientLogOutput target) {
+        this.target.set(target);
+    }
 }

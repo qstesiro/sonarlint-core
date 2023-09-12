@@ -22,20 +22,21 @@ package org.slf4j;
 /**
  * This class has the same signature has the {@link LoggerFactory} of slf4j.
  * Instead of finding an implementation of slf4j, it creates a bridge between the slf4j API and the sonar logging API.
- * It will always return the same slf4j Logger. This logger forwards all logs to a sonar API logger. 
+ * It will always return the same slf4j Logger. This logger forwards all logs to a sonar API logger.
  */
 public class LoggerFactory {
-  private static final LoggerAdapter ADAPTER = new LoggerAdapter();
 
-  private LoggerFactory() {
-    // only static methods
-  }
+    private static final LoggerAdapter ADAPTER = new LoggerAdapter();
 
-  public static Logger getLogger(String name) {
-    return ADAPTER;
-  }
+    private LoggerFactory() {
+        // only static methods
+    }
 
-  public static Logger getLogger(Class clazz) {
-    return ADAPTER;
-  }
+    public static Logger getLogger(String name) {
+        return ADAPTER;
+    }
+
+    public static Logger getLogger(Class clazz) {
+        return ADAPTER;
+    }
 }

@@ -29,18 +29,20 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
  * The LogOutput can be set dynamically at any time, for the executing thread.
  */
 public class Loggers {
-  private static final SonarApiLogger logger = new SonarApiLogger();
 
-  public static Logger get(Class<?> name) {
-    return logger;
-  }
+    // private static final SonarApiLogger logger = new SonarApiLogger();
+    private static final ConsoleApiLogger logger = new ConsoleApiLogger();
 
-  public static Logger get(String name) {
-    return logger;
-  }
+    public static Logger get(Class<?> name) {
+        return logger;
+    }
 
-  private Loggers() {
-    // Only use get()
-  }
+    public static Logger get(String name) {
+        return logger;
+    }
+
+    private Loggers() {
+        // Only use get()
+    }
 
 }

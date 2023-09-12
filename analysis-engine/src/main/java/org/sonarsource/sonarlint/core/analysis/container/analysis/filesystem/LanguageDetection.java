@@ -27,15 +27,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
+
 import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.MessageException;
+
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.stream.Collectors.joining;
-import static java.lang.System.out;
 
 /**
  * Detect language of a source file based on its suffix and configured patterns.
@@ -64,40 +65,11 @@ public class LanguageDetection {
 
     @CheckForNull
     public Language language(InputFile inputFile) {
-        // ???
-        // Stream.of(Thread.currentThread().getStackTrace()).forEach(
-        //     e -> out.printf("--- LanguageDetetion.language - %s\n", e)
-        // );
         Language detectedLanguage = null;
         for (Entry<Language, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
             if (isCandidateForLanguage(inputFile, languagePatterns.getValue())) {
                 detectedLanguage = languagePatterns.getKey();
-                // ???
-                // out.printf(
-                //     "--- LanguageDetetion.language - lang: %s, plugin: %s\n",
-                //     detectedLanguage.getLanguageKey(),
-                //     detectedLanguage.getPluginKey()
-                // );
                 break;
-                // if (!languagePatterns.getKey().getLanguageKey().equals("java") ||
-                //     !languagePatterns.getKey().getPluginKey().equals("pmd")) {
-                //     continue;
-                // }
-                // if (detectedLanguage == null) {
-                //     detectedLanguage = languagePatterns.getKey();
-                // } else {
-                //     // Language was already forced by another pattern
-                //     throw MessageException.of(
-                //         MessageFormat.format(
-                //             "Language of file ''{0}'' " +
-                //             "can not be decided as the file extension matches " +
-                //             "both {1} and {2}",
-                //             inputFile.uri(),
-                //             getDetails(detectedLanguage),
-                //             getDetails(languagePatterns.getKey())
-                //         )
-                //     );
-                // }
             }
         }
         if (detectedLanguage != null) {

@@ -20,13 +20,17 @@
 package org.sonarsource.sonarlint.core.plugin.commons.loading;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.io.IOException;
+
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -35,13 +39,11 @@ import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest.RequiredPlugin;
 
-import static java.lang.System.out;
-
 public class SonarPluginRequirementsChecker {
 
     private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-    private static final Logger LOG = Loggers.get(SonarPluginRequirementsChecker.class);
+    private static final Logger log = Loggers.get(SonarPluginRequirementsChecker.class);
 
     private final PluginsMinVersions pluginMinVersions;
     private final Version implementedPluginApiVersion;
@@ -75,19 +77,27 @@ public class SonarPluginRequirementsChecker {
             try {
                 plugin = PluginInfo.create(jarLocation);
             } catch (Exception e) {
-                LOG.error("Unable to load plugin " + jarLocation, e);
+                log.error("Unable to load plugin " + jarLocation, e);
+                e.printStackTrace();
                 continue;
             }
             if (resultsByKey.containsKey(plugin.getKey())) {
-                throw new IllegalStateException(
-                    "Duplicate plugin key '" +
-                    plugin.getKey() +
-                    "' from '" +
-                    plugin.getJarFile() +
-                    "' and '" +
-                    resultsByKey.get(plugin.getKey()).getPlugin().getJarFile() +
-                    "'"
-                );
+                var existedPlugin = resultsByKey.get(plugin.getKey()).getPlugin();
+                var compare = existedPlugin.getVersion().compareTo(plugin.getVersion());
+                if (compare == 0) {
+                    throw new IllegalStateException(
+                        "Duplicate plugin key '" +
+                        plugin.getKey() +
+                        "' from '" +
+                        plugin.getJarFile() +
+                        "' and '" +
+                        resultsByKey.get(plugin.getKey()).getPlugin().getJarFile() +
+                        "'"
+                    );
+                } else if (compare > 0) {
+                    continue;
+                }
+                // 旧版本的插件将在启动时被删除
             }
             resultsByKey.put(
                 plugin.getKey(),
@@ -100,10 +110,12 @@ public class SonarPluginRequirementsChecker {
                 )
             );
         }
-        for (var e : resultsByKey.entrySet()) { // ???
-            out.printf(
-                "--- after first filter: %s, skip: %b\n",
-                e.getKey(), e.getValue().isSkipped()
+        for (var e : resultsByKey.entrySet()) {
+            log.debug(
+                "first filter: {}, skip: {}, version: {}",
+                e.getKey(),
+                e.getValue().isSkipped(),
+                e.getValue().getPlugin().getVersion().toString()
             );
         }
         // Second pass of checks
@@ -115,10 +127,11 @@ public class SonarPluginRequirementsChecker {
                 );
             }
         }
-        for (var e : resultsByKey.entrySet()) { // ???
-            out.printf(
-                "--- second first filter: %s, skip: %b\n",
-                e.getKey(), e.getValue().isSkipped()
+        for (var e : resultsByKey.entrySet()) {
+            log.debug(
+                "second filter: {}, skip: {}",
+                e.getKey(),
+                e.getValue().isSkipped()
             );
         }
         return resultsByKey;
@@ -131,19 +144,11 @@ public class SonarPluginRequirementsChecker {
         boolean shouldCheckNodeVersion,
         Optional<Version> nodeCurrentVersion
     ) {
-        // for (var e : enabledLanguages) { // ???
-        //     out.printf(
-        //         "--- enabled --- languageKey: %s, pluginKey: %s, label: %s\n",
-        //         e.getLanguageKey(),
-        //         e.getPluginKey(),
-        //         e.getLabel()
-        //     );
-        // }
         var pluginKey = plugin.getKey();
         var languages = Language.getLanguagesByPluginKey(pluginKey);
-        for (var e : languages) { // ???
-            out.printf(
-                "--- target --- languageKey: %s, pluginKey: %s, label: %s\n",
+        for (var e : languages) {
+            log.debug(
+                "target - languageKey: {}, pluginKey: {}, label: {}",
                 e.getLanguageKey(),
                 e.getPluginKey(),
                 e.getLabel()
@@ -151,23 +156,14 @@ public class SonarPluginRequirementsChecker {
         }
         if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
             if (languages.size() > 1) {
-                out.printf(
-                    "--- Plugin '%s' is excluded because none of languages '%s' are enabled. Skip loading it.\n",
-                    plugin.getName(),
-                    languages.stream().map(Language::toString).collect(Collectors.joining(","))
-                );
-                LOG.debug(
+                log.debug(
                     "Plugin '{}' is excluded because none of languages '{}' are enabled. Skip loading it.",
                     plugin.getName(),
                     languages.stream().map(Language::toString).collect(Collectors.joining(","))
                 );
+
             } else {
-                out.printf(
-                    "--- Plugin '%s' is excluded because language '%s' is not enabled. Skip loading it.\n",
-                    plugin.getName(),
-                    languages.iterator().next().toString()
-                );
-                LOG.debug(
+                log.debug(
                     "Plugin '{}' is excluded because language '{}' is not enabled. Skip loading it.",
                     plugin.getName(),
                     languages.iterator().next()
@@ -178,7 +174,7 @@ public class SonarPluginRequirementsChecker {
             );
         }
         if (!isCompatibleWith(plugin, implementedPluginApiVersion)) {
-            LOG.debug(
+            log.debug(
                 "Plugin '{}' requires plugin API {} while SonarLint supports only up to {}. Skip loading it.",
                 plugin.getName(),
                 plugin.getMinimalSqVersion(),
@@ -188,7 +184,7 @@ public class SonarPluginRequirementsChecker {
         }
         var pluginMinVersion = pluginMinVersions.getMinimumVersion(pluginKey);
         if (pluginMinVersion != null && !pluginMinVersions.isVersionSupported(pluginKey, plugin.getVersion())) {
-            LOG.debug(
+            log.debug(
                 "Plugin '{}' version '{}' is not supported (minimal version is '{}'). Skip loading it.",
                 plugin.getName(), plugin.getVersion(),
                 pluginMinVersion
@@ -201,7 +197,7 @@ public class SonarPluginRequirementsChecker {
         var jreMinVersion = plugin.getJreMinVersion();
         if (jreMinVersion != null) {
             if (!jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {
-                LOG.debug(
+                log.debug(
                     "Plugin '{}' requires JRE {} while current is {}. Skip loading it.",
                     plugin.getName(), jreMinVersion, jreCurrentVersion
                 );
@@ -219,7 +215,7 @@ public class SonarPluginRequirementsChecker {
             var nodeMinVersion = plugin.getNodeJsMinVersion();
             if (nodeMinVersion != null) {
                 if (nodeCurrentVersion.isEmpty()) {
-                    LOG.debug(
+                    log.debug(
                         "Plugin '{}' requires Node.js {}. Skip loading it.",
                         plugin.getName(),
                         nodeMinVersion
@@ -233,7 +229,7 @@ public class SonarPluginRequirementsChecker {
                         )
                     );
                 } else if (!nodeCurrentVersion.get().satisfiesMinRequirement(nodeMinVersion)) {
-                    LOG.debug(
+                    log.debug(
                         "Plugin '{}' requires Node.js {} while current is {}. Skip loading it.",
                         plugin.getName(),
                         nodeMinVersion,
@@ -292,7 +288,7 @@ public class SonarPluginRequirementsChecker {
             // If we evaluate A before B, then A might be wrongly included
             // But I'm not aware of such case in real life.
             if (depInfo == null || depInfo.isSkipped()) {
-                LOG.debug(
+                log.debug(
                     "Plugin '{}' dependency on '{}' is unsatisfied. Skip loading it.",
                     currentResult.getPlugin().getName(),
                     required.getKey()
@@ -307,7 +303,7 @@ public class SonarPluginRequirementsChecker {
         if (basePluginKey != null) {
             var baseInfo = currentResultsByKey.get(basePluginKey);
             if (baseInfo == null || baseInfo.isSkipped()) {
-                LOG.debug(
+                log.debug(
                     "Plugin '{}' dependency on '{}' is unsatisfied. Skip loading it.",
                     currentResult.getPlugin().getName(),
                     basePluginKey

@@ -19,14 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.commons.log;
 
-/**
- * Allow to redirect SonarLint logs to a custom output on client side
- */
-public interface ClientLogOutput {
+import java.util.logging.Level;
+import java.util.logging.StreamHandler;
+import java.util.logging.LogRecord;
 
-    void log(String formattedMessage, Level level);
+public class Logger {
 
-    enum Level {
-        ERROR, WARN, INFO, DEBUG, TRACE;
+    private static java.util.logging.Logger log;
+
+    public static java.util.logging.Logger get() {
+        if (log == null) {
+            log = java.util.logging.Logger.getGlobal();
+            log.addHandler(new StreamHandler(System.out, new Formatter()));
+        }
+        return log;
+    }
+
+    private static class Formatter extends java.util.logging.Formatter {
+
+        @Override
+        public String format(LogRecord record) {
+            return record.getMessage() + "\n";
+        }
     }
 }

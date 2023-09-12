@@ -26,6 +26,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
+
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
@@ -35,11 +39,11 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
-import static java.lang.System.out;
-
 public class AnalysisEngine {
 
     private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final Logger log = Loggers.get(AnalysisEngine.class);
+
     private static final Runnable CANCELING_TERMINATION = () -> {};
 
     private final GlobalAnalysisContainer globalAnalysisContainer;
@@ -87,12 +91,12 @@ public class AnalysisEngine {
 
     public <T> CompletableFuture<T> post(Command<T> command, ProgressMonitor progressMonitor) {
         if (termination.get() != null) {
-            out.printf("--- Analysis engine stopping, ignoring command\n");
+            log.debug("Analysis engine stopping, ignoring command");
             LOG.error("Analysis engine stopping, ignoring command");
             return CompletableFuture.completedFuture(null);
         }
         if (!analysisThread.isAlive()) {
-            out.printf("--- Analysis engine not started, ignoring command\n");
+            log.debug("Analysis engine not started, ignoring command");
             LOG.error("Analysis engine not started, ignoring command");
             return CompletableFuture.completedFuture(null);
         }

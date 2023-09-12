@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.sonar.api.batch.DependedUpon;
 import org.sonar.api.batch.DependsUpon;
 import org.sonar.api.batch.Phase;
@@ -34,12 +35,13 @@ import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonar.api.utils.dag.DirectAcyclicGraph;
+import org.sonar.api.utils.log.Logger;
+import org.sonar.api.utils.log.Loggers;
+
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-
-import static java.lang.System.out;
 
 /**
  * Execute Sensors.
@@ -47,6 +49,7 @@ import static java.lang.System.out;
 public class SensorsExecutor {
 
     private static final SonarLintLogger LOG = SonarLintLogger.get();
+    private static final Logger log = Loggers.get(SensorsExecutor.class);
 
     private final SensorOptimizer sensorOptimizer;
     private final ProgressMonitor progress;
@@ -63,17 +66,13 @@ public class SensorsExecutor {
         this.sensors = sensors.orElse(List.of());
         this.sensorOptimizer = sensorOptimizer;
         this.progress = progress;
-        // ???
-        out.printf("--- sensor count: %d\n", this.sensors.size());
+        log.debug("sensor count: {}", this.sensors.size());
         for (var e : sensors.orElse(new ArrayList<Sensor>())) {
-            out.printf("--- sensor class: %s\n", e.getClass().getName());
+            log.debug("sensor class: {}", e.getClass().getName());
         };
-        // Stream.of(Thread.currentThread().getStackTrace())
-        //     .forEach(e -> out.printf("--- %s\n", e));
     }
 
     public void execute() {
-        out.println("--- SensorsExecutor.execute"); // ???
         for (Sensor sensor : sort(sensors)) {
             progress.checkCancel();
             var descriptor = new DefaultSensorDescriptor();
