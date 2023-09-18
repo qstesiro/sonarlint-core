@@ -29,15 +29,15 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
  */
 public interface SonarLintEngine {
 
-  /**
-   * Get information about the analyzers that are currently loaded.
-   * Should only be called when engine is started.
-   */
-  Collection<PluginDetails> getPluginDetails();
+    /**
+     * Get information about the analyzers that are currently loaded.
+     * Should only be called when engine is started.
+     */
+    Collection<PluginDetails> getPluginDetails();
 
-  CompletableFuture<Void> declareModule(ClientModuleInfo module);
+    CompletableFuture<Void> declareModule(ClientModuleInfo module);
 
-  CompletableFuture<Void> stopModule(Object moduleKey);
+    CompletableFuture<Void> stopModule(Object moduleKey);
 
-  CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
+    CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
 }

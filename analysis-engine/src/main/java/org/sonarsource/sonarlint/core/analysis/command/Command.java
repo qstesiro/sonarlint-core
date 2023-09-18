@@ -23,5 +23,6 @@ import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 public interface Command<R> {
-  R execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor);
+
+    R execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor);
 }

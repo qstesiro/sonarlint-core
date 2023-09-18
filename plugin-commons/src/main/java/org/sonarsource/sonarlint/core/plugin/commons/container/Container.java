@@ -24,13 +24,13 @@ import java.util.Optional;
 
 public interface Container {
 
-  Container add(Object... objects);
+    Container add(Object... objects);
 
-  <T> T getComponentByType(Class<T> type);
+    <T> T getComponentByType(Class<T> type);
 
-  <T> Optional<T> getOptionalComponentByType(Class<T> type);
+    <T> Optional<T> getOptionalComponentByType(Class<T> type);
 
-  <T> List<T> getComponentsByType(Class<T> type);
+    <T> List<T> getComponentsByType(Class<T> type);
 
-  Container getParent();
+    Container getParent();
 }

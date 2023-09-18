@@ -189,8 +189,8 @@ public class ConsoleApiLogger extends BaseLogger {
 
     @Override
     public LoggerLevel getLevel() {
-        // return LoggerLevel.DEBUG;
-        return LoggerLevel.INFO;
+        return LoggerLevel.DEBUG;
+        // return LoggerLevel.INFO;
     }
 
 }
